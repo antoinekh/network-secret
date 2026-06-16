@@ -124,7 +124,7 @@ export const juniper9: Cipher = {
   name: "Juniper $9$",
   vendor: "Juniper",
   magic: "$9$",
-  tagline: "Reversible, keyless obfuscation for JUNOS secrets.",
+  tagline: "Juniper type 9 ($9$): reversible, keyless obfuscation for JUNOS secrets.",
   reversible: true,
   keyed: false,
   status: "available",

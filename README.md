@@ -1,4 +1,4 @@
-# Vendor Secrets
+# Network Secret Decoder
 
 A static, **fully client-side** toolkit to decode and encode network device secret formats. Every byte of computation happens in your browser - nothing is ever sent to a server - so it deploys to any static host (built for **Cloudflare Pages**).
 
@@ -16,7 +16,7 @@ One page per format. Adding a format is one module (see [Adding a format](#addin
 
 - **Svelte 5 + Vite + TypeScript**, no UI framework runtime beyond Svelte.
 - **Vitest** for the crypto unit tests.
-- Fonts (**Archivo**, **IBM Plex Mono**) are self-hosted via `@fontsource` - no external CDN.
+- Fonts (**Hanken Grotesk**, **JetBrains Mono**) are self-hosted via `@fontsource` - no external CDN.
 - `$8$` uses the browser-native **Web Crypto API** (PBKDF2 + AES-256-GCM). `$9$` is a pure-TS port of the public algorithm. Nokia `custom-hash` uses AES-ECB, which Web Crypto deliberately omits, so it uses the small pure-JS **`aes-js`** library (bundled locally, no CDN).
 
 ## Develop
@@ -50,19 +50,12 @@ src/
     Header / Footer / Badge / CopyButton
 ```
 
-The home cards and the per-format pages are generated from the `registry`. The
-router maps `/c/:id` to a registry entry; unknown paths 404 client-side. The
-`public/_redirects` file gives Cloudflare Pages the SPA fallback so deep links
-(e.g. `/c/juniper8`) resolve to `index.html`.
+The home cards and the per-format pages are generated from the `registry`. The router maps `/c/:id` to a registry entry; unknown paths 404 client-side. The `public/_redirects` file gives Cloudflare Pages the SPA fallback so deep links (e.g. `/c/juniper8`) resolve to `index.html`.
 
 ### Adding a format
 
-1. Create `src/lib/ciphers/<id>.ts` exporting a `Cipher` (implement `encode`
-   and `decode`, fill in the metadata, set `status: "available"`).
+1. Create `src/lib/ciphers/<id>.ts` exporting a `Cipher` (implement `encode` and `decode`, fill in the metadata, set `status: "available"`).
 2. Register it in `src/lib/ciphers/registry.ts`.
-3. Add `src/lib/ciphers/<id>.test.ts` with known-answer vectors and a
-   round-trip test.
+3. Add `src/lib/ciphers/<id>.test.ts` with known-answer vectors and a round-trip test.
 
-The home card, the `/c/<id>` page, and the header tab all appear automatically
-from the registry entry. An entry can also be marked `status: "planned"` to
-show as a teaser before its `encode`/`decode` are implemented.
+The home card, the `/c/<id>` page, and the header tab all appear automatically from the registry entry. An entry can also be marked `status: "planned"` to show as a teaser before its `encode`/`decode` are implemented.

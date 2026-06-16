@@ -71,7 +71,7 @@
 
 <style>
   .hero {
-    padding-block: clamp(2.5rem, 8vw, 6rem) clamp(2rem, 5vw, 3.5rem);
+    padding-block: clamp(1.6rem, 5vw, 4rem) clamp(2rem, 5vw, 3.5rem);
   }
   .title {
     font-size: clamp(2rem, 6vw, 4rem);

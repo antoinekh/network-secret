@@ -1,5 +1,5 @@
 {
-  "name": "vendor-secrets",
+  "name": "network-secret-decoder",
   "private": true,
   "version": "0.1.0",
   "type": "module",

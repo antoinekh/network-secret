@@ -10,9 +10,9 @@
 
 <header class="hdr">
   <div class="wrap top">
-    <a class="brand" href="/" use:link aria-label="Vendor Secrets home">
+    <a class="brand" href="/" use:link aria-label="Network Secret Decoder home">
       <span class="mark mono">//</span>
-      <span class="word display">Vendor Secrets</span>
+      <span class="word display">Network Secret Decoder</span>
     </a>
     <div class="top-right">
       <span class="meta mono">Runs locally · no backend</span>
@@ -59,7 +59,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding-block: 1rem 0.85rem;
+    padding-block: 0.7rem 0.6rem;
   }
   .brand {
     display: inline-flex;
@@ -79,8 +79,9 @@
     box-shadow: var(--shadow-sm);
   }
   .word {
-    font-size: 1.22rem;
+    font-size: clamp(1.05rem, 2.2vw, 1.32rem);
     font-weight: 700;
+    line-height: 1.1;
   }
   .top-right {
     display: flex;
@@ -88,7 +89,7 @@
     gap: 0.9rem;
   }
   .meta {
-    font-size: 0.68rem;
+    font-size: 0.74rem;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -99,7 +100,7 @@
     border: 1px solid var(--line-2);
     border-radius: 999px;
     padding: 0.42em 0.9em;
-    font-size: 0.68rem;
+    font-size: 0.74rem;
     letter-spacing: 0.04em;
     color: var(--ink-2);
     white-space: nowrap;
@@ -115,7 +116,7 @@
     transform: translateY(-1px);
   }
   .nav-wrap {
-    padding-bottom: 0.7rem;
+    padding-bottom: 0.4rem;
   }
   .nav {
     display: flex;
@@ -131,7 +132,7 @@
     padding: 0.45rem 0.9rem;
     border-radius: 999px;
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: 0.78rem;
     letter-spacing: 0.02em;
     color: var(--ink-2);
     white-space: nowrap;

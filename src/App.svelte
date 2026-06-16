@@ -29,7 +29,7 @@
   );
 
   $effect(() => {
-    const base = "Vendor Secrets";
+    const base = "Network Secret Decoder";
     document.title =
       route.name === "cipher"
         ? `${route.cipher.name} · ${base}`

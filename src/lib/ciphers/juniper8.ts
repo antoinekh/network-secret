@@ -152,7 +152,8 @@ export const juniper8: Cipher = {
   name: "Juniper $8$",
   vendor: "Juniper",
   magic: "$8$",
-  tagline: "Master-password-keyed AES-256-GCM encryption for JUNOS secrets.",
+  tagline:
+    "Juniper type 8 ($8$): master-password-keyed AES-256-GCM encryption for JUNOS secrets.",
   reversible: false,
   keyed: true,
   keyLabel: "Master password",

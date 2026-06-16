@@ -78,12 +78,12 @@
 
 <style>
   .head {
-    padding-block: clamp(2rem, 6vw, 4rem) clamp(1.5rem, 4vw, 2.5rem);
+    padding-block: clamp(0.3rem, 1vw, 0.6rem) clamp(0.8rem, 2vw, 1.2rem);
   }
   .back {
     display: inline-block;
     color: var(--ink-2);
-    margin-bottom: 1.6rem;
+    margin-bottom: 0.55rem;
     transition: color 0.15s ease;
   }
   .back:hover {
@@ -94,7 +94,7 @@
     gap: clamp(1rem, 4vw, 2.5rem);
     align-items: flex-start;
     border-bottom: 1px solid var(--line);
-    padding-bottom: clamp(1.5rem, 4vw, 2.4rem);
+    padding-bottom: clamp(0.4rem, 1.2vw, 0.7rem);
   }
   .idx {
     display: grid;
@@ -121,13 +121,13 @@
     display: flex;
     gap: 0.45rem;
     flex-wrap: wrap;
-    margin-top: 1rem;
+    margin-top: 0.7rem;
   }
   .body {
     display: grid;
     grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
     gap: clamp(1.6rem, 5vw, 3.5rem);
-    padding-top: clamp(1.8rem, 4vw, 3rem);
+    padding-top: clamp(0.3rem, 0.8vw, 0.6rem);
     align-items: start;
   }
   .notes {
