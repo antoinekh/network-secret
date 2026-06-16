@@ -66,19 +66,3 @@ router maps `/c/:id` to a registry entry; unknown paths 404 client-side. The
 The home card, the `/c/<id>` page, and the header tab all appear automatically
 from the registry entry. An entry can also be marked `status: "planned"` to
 show as a teaser before its `encode`/`decode` are implemented.
-
-## Deploy (Cloudflare Pages)
-
-Push to GitHub, point Cloudflare Pages at the repo (build command `npm run build`,
-output directory `dist`, `NODE_VERSION=20`), and it deploys. `public/_redirects`
-handles SPA routing; there is no backend.
-
-See **[DEPLOY.md](DEPLOY.md)** for the full step-by-step guide (git init, GitHub,
-Cloudflare Pages, custom domain, automatic deploys).
-
-## Security note
-
-`$9$` is reversible obfuscation - anyone can decode it. `$8$` is real
-encryption, but its strength rests on the master password; treat that password
-as a high-value secret. Because everything runs locally, the values you paste
-never leave your machine.
