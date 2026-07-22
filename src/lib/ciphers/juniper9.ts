@@ -120,7 +120,6 @@ export function encode(plaintext: string): string {
 
 export const juniper9: Cipher = {
   id: "juniper9",
-  index: "01",
   name: "Juniper $9$",
   vendor: "Juniper",
   magic: "$9$",

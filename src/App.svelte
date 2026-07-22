@@ -1,38 +1,35 @@
 <script lang="ts">
-  import type { Cipher } from "./lib/ciphers/types";
+  import type { CatalogueEntry } from "./lib/ciphers/types";
   import { path, link } from "./lib/router";
-  import { findCipher } from "./lib/ciphers/registry";
+  import { findEntry, isConverter } from "./lib/ciphers/registry";
   import Header from "./components/Header.svelte";
   import Footer from "./components/Footer.svelte";
   import Home from "./components/Home.svelte";
   import CipherPage from "./components/CipherPage.svelte";
+  import ExplainerPage from "./components/ExplainerPage.svelte";
 
   type Route =
     | { name: "home" }
-    | { name: "cipher"; cipher: Cipher }
+    | { name: "entry"; entry: CatalogueEntry }
     | { name: "notfound" };
 
   function resolve(p: string): Route {
     const clean = p.replace(/\/+$/, "") || "/";
     if (clean === "/") return { name: "home" };
-    const match = clean.match(/^\/c\/([\w-]+)$/);
-    if (match) {
-      const cipher = findCipher(match[1]);
-      if (cipher) return { name: "cipher", cipher };
-    }
+    const id = clean.slice(1);
+    const entry = id.includes("/") ? undefined : findEntry(id);
+    if (entry) return { name: "entry", entry };
     return { name: "notfound" };
   }
 
   const route = $derived(resolve($path));
-  const routeKey = $derived(
-    route.name === "cipher" ? `c:${route.cipher.id}` : route.name,
-  );
+  const routeKey = $derived(route.name === "entry" ? route.entry.id : route.name);
 
   $effect(() => {
     const base = "Network Secret Decoder";
     document.title =
-      route.name === "cipher"
-        ? `${route.cipher.name} · ${base}`
+      route.name === "entry"
+        ? `${route.entry.name} · ${base}`
         : route.name === "notfound"
           ? `Not found · ${base}`
           : `${base}: network device secret toolkit`;
@@ -45,8 +42,10 @@
     {#key routeKey}
       {#if route.name === "home"}
         <Home />
-      {:else if route.name === "cipher"}
-        <CipherPage cipher={route.cipher} />
+      {:else if route.name === "entry" && isConverter(route.entry)}
+        <CipherPage cipher={route.entry} />
+      {:else if route.name === "entry" && route.entry.kind === "explainer"}
+        <ExplainerPage explainer={route.entry} />
       {:else}
         <section class="nf wrap">
           <p class="eyebrow accent">Error 404</p>

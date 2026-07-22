@@ -148,7 +148,6 @@ export async function decode(encoded: string, master?: string): Promise<string> 
 
 export const juniper8: Cipher = {
   id: "juniper8",
-  index: "02",
   name: "Juniper $8$",
   vendor: "Juniper",
   magic: "$8$",

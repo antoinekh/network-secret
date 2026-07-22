@@ -1,6 +1,6 @@
 <script lang="ts">
   import { path, link } from "../lib/router";
-  import { registry } from "../lib/ciphers/registry";
+  import { catalogue } from "../lib/ciphers/registry";
   import { theme, toggleTheme } from "../lib/theme";
 
   function isActive(current: string, href: string): boolean {
@@ -29,16 +29,20 @@
   <nav class="nav-wrap" aria-label="Sections">
     <div class="wrap nav">
       <a class="tab" class:active={isActive($path, "/")} href="/" use:link>Catalogue</a>
-      {#each registry as c (c.id)}
-        {#if c.status === "available"}
+      {#each catalogue as c (c.id)}
+        {#if c.kind === "explainer"}
           <a
-            class="tab"
-            class:active={isActive($path, `/c/${c.id}`)}
-            href={`/c/${c.id}`}
-            use:link>{c.name}</a
+            class="tab withpill"
+            class:active={isActive($path, `/${c.id}`)}
+            href={`/${c.id}`}
+            use:link>{c.name}<span class="pill">doc</span></a
+          >
+        {:else if c.status === "available"}
+          <a class="tab" class:active={isActive($path, `/${c.id}`)} href={`/${c.id}`} use:link
+            >{c.name}</a
           >
         {:else}
-          <span class="tab disabled">{c.name}<span class="soon">soon</span></span>
+          <span class="tab disabled">{c.name}<span class="pill">soon</span></span>
         {/if}
       {/each}
     </div>
@@ -148,15 +152,18 @@
     color: #fff;
     background: var(--accent);
   }
-  .tab.disabled {
-    color: var(--ink-3);
-    opacity: 0.6;
-    cursor: default;
+  .tab.disabled,
+  .tab.withpill {
     display: inline-flex;
     align-items: center;
     gap: 0.45em;
   }
-  .soon {
+  .tab.disabled {
+    color: var(--ink-3);
+    opacity: 0.6;
+    cursor: default;
+  }
+  .pill {
     font-size: 0.56rem;
     letter-spacing: 0.06em;
     border-radius: 999px;

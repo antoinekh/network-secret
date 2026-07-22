@@ -87,7 +87,6 @@ export async function decode(encoded: string, key?: string): Promise<string> {
 
 export const nokiaCustomHash: Cipher = {
   id: "nokia-custom-hash",
-  index: "03",
   name: "Nokia custom-hash",
   vendor: "Nokia",
   magic: "",

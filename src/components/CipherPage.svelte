@@ -1,10 +1,10 @@
 <script lang="ts">
-  import type { Cipher } from "../lib/ciphers/types";
+  import type { ConverterEntry } from "../lib/ciphers/types";
   import { link } from "../lib/router";
   import Converter from "./Converter.svelte";
   import Badge from "./Badge.svelte";
 
-  let { cipher }: { cipher: Cipher } = $props();
+  let { cipher }: { cipher: ConverterEntry } = $props();
 </script>
 
 <section class="head wrap">

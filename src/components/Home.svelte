@@ -1,10 +1,12 @@
 <script lang="ts">
   import { link } from "../lib/router";
-  import { registry } from "../lib/ciphers/registry";
+  import { catalogue } from "../lib/ciphers/registry";
   import Badge from "./Badge.svelte";
 
-  const available = registry.filter((c) => c.status === "available").length;
-  const planned = registry.filter((c) => c.status === "planned").length;
+  const converters = catalogue.filter((c) => c.kind === "converter");
+  const available = converters.filter((c) => c.status === "available").length;
+  const planned = converters.filter((c) => c.status === "planned").length;
+  const explainers = catalogue.filter((c) => c.kind === "explainer").length;
 </script>
 
 <section class="hero wrap">
@@ -27,14 +29,29 @@
   <div class="cat-head reveal" style="animation-delay: 400ms">
     <span class="eyebrow">Catalogue</span>
     <span class="eyebrow">
-      {available} available{planned > 0 ? ` · ${planned} planned` : ""}
+      {available} available{planned > 0 ? ` · ${planned} planned` : ""}{explainers > 0
+        ? ` · ${explainers} explainers`
+        : ""}
     </span>
   </div>
   <ul class="list">
-    {#each registry as c, i (c.id)}
+    {#each catalogue as c, i (c.id)}
       <li class="reveal" style="animation-delay: {440 + i * 80}ms">
-        {#if c.status === "available"}
-          <a class="row" href={`/c/${c.id}`} use:link>
+        {#if c.kind === "explainer"}
+          <a class="row" href={`/${c.id}`} use:link>
+            <span class="idx mono">{c.index}</span>
+            <span class="main">
+              <span class="name display">{c.name}</span>
+              <span class="tag">{c.cardTagline ?? c.tagline}</span>
+            </span>
+            <span class="badges">
+              <Badge label={c.vendor} />
+              <Badge label="Doc" tone="muted" />
+            </span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </a>
+        {:else if c.status === "available"}
+          <a class="row" href={`/${c.id}`} use:link>
             <span class="idx mono">{c.index}</span>
             <span class="main">
               <span class="name display">{c.name}</span>
