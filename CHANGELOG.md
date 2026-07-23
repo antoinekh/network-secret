@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Renamed the project and repository from `network-secret-decoder` to `network-secret-website`, and moved the site to [network-secret-website.pages.dev](https://network-secret-website.pages.dev/). The companion Python package lives at [network-secret](https://github.com/antoinekh/network-secret).
+
 ## v0.2.0 - 2026-07-22
 
 - Add a **Nokia `hash3`** explainer page (`/hash3`): SR OS 26.7+ primary-secret encryption for configuration secrets. Documented rather than decodable, because reproducing a value offline needs key material lifted out of the SR OS binary plus a per-configuration-leaf-key salt. Covers the construction (PBKDF2-HMAC-SHA3-512 + AES-256-GCM), the per-leaf-key salt, the wire format, setup commands, and security takeaways.
