@@ -1,6 +1,6 @@
 """The Cipher contract shared by every supported secret format.
 
-Mirrors the registry-of-ciphers structure of the network-secret-decoder web
+Mirrors the registry-of-ciphers structure of the network-secret-website web
 app: each format is one Cipher entry carrying its metadata and its three
 operations.
 """
