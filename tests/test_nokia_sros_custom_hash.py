@@ -4,7 +4,7 @@ import pytest
 
 from network_secret import nokia_sros_custom_hash as nokia
 
-# Known-answer vector shared with the network-secret-website web app.
+# Known-answer vector shared with the web app under web/.
 KEY = "a3f8d9e112c04b7af1c3e8b92d057a4e"  # 32 chars -> AES-256
 PLAINTEXT = "L@bS3cr3t!"
 ENCODED = "Xfs39BMeblOtlorgwTChxQ== custom"

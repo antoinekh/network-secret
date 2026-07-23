@@ -1,8 +1,7 @@
 """The Cipher contract shared by every supported secret format.
 
-Mirrors the registry-of-ciphers structure of the network-secret-website web
-app: each format is one Cipher entry carrying its metadata and its three
-operations.
+Mirrors the registry-of-ciphers structure of the web app under web/: each
+format is one Cipher entry carrying its metadata and its three operations.
 """
 
 from __future__ import annotations
