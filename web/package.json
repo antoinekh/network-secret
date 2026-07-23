@@ -1,7 +1,6 @@
 {
   "name": "network-secret-web",
   "private": true,
-  "version": "0.2.0",
   "type": "module",
   "description": "Encode and decode network device secrets ($9$, $8$, ...) entirely in the browser",
   "scripts": {
