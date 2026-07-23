@@ -26,7 +26,7 @@
   const routeKey = $derived(route.name === "entry" ? route.entry.id : route.name);
 
   $effect(() => {
-    const base = "Network Secret Decoder";
+    const base = "Network Secret";
     document.title =
       route.name === "entry"
         ? `${route.entry.name} · ${base}`

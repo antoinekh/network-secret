@@ -48,7 +48,10 @@ dev = [
 packages = ["network_secret"]
 
 [tool.hatch.build.targets.sdist]
+# The repo also hosts the Svelte site under web/. `include` alone does not keep
+# it out of the sdist, so exclude it explicitly: PyPI users have no use for it.
 include = ["network_secret/", "README.md", "LICENSE", "tests/"]
+exclude = ["web/"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented here.
 
+## Unreleased
+
+### Fixed
+
+- The sdist no longer ships the `web/` site. Now that the repo also hosts the Svelte app, the existing `include` list did not keep it out, so 138 unrelated files would have been packaged; `web/` is now excluded explicitly. The published v0.1.0 predates the merge and is unaffected.
+
+### Changed
+
+- The website now lives in this repo under `web/`, sharing the known-answer vectors that both the Python and TypeScript implementations are tested against.
+
 ## v0.1.0 - 2026-07-23
 
 ### Added

@@ -4,7 +4,9 @@
 
 ### Changed
 
-- Renamed the project and repository from `network-secret-decoder` to `network-secret-website`, and moved the site to [network-secret-website.pages.dev](https://network-secret-website.pages.dev/). The companion Python package lives at [network-secret](https://github.com/antoinekh/network-secret).
+- Moved the site into the [network-secret](https://github.com/antoinekh/network-secret) monorepo under `web/`, alongside the Python package. History was preserved via `git subtree`. This also lets the Cloudflare Pages project take the name `network-secret`, dropping the `-website` suffix from the URL.
+- Renamed the site from "Network Secret Decoder" to **Network Secret**: the tool encodes as well as decodes, so "decoder" undersold it. Updates the browser title, the header brand, and the accessible label.
+- Renamed the npm package from `network-secret-website` to `network-secret-web`.
 
 ## v0.2.0 - 2026-07-22
 

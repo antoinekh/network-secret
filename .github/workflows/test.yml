@@ -1,9 +1,23 @@
 name: tests
 
+# Python package only. The Svelte site under web/ has its own workflow, so
+# site-only commits must not run pytest (and vice versa).
 on:
   push:
     branches: [master]
+    paths:
+      - "network_secret/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/test.yml"
   pull_request:
+    paths:
+      - "network_secret/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/test.yml"
 
 jobs:
   test:

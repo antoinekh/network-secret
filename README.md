@@ -4,6 +4,18 @@ Encode, decode, and check network device secrets for Juniper JunOS and Nokia SR 
 
 > **Prefer a browser?** Encode and decode all three formats at **[network-secret-website.pages.dev](https://network-secret-website.pages.dev/)**. It runs the same algorithms fully client-side - nothing you type is ever sent to a server.
 
+## Repository layout
+
+This repo holds both the Python package and the website that share these algorithms.
+
+| Path | What |
+|------|------|
+| `network_secret/` | The Python package published to PyPI as `network-secret` |
+| `tests/` | Python test suite |
+| `web/` | The Svelte site deployed to Cloudflare Pages, with its own `README` and tests |
+
+The two implementations share known-answer vectors, so keeping them in one repo means a cipher fix and its test data land in a single commit.
+
 ## Supported formats
 
 | Format | CLI subcommand | Python module | Description |

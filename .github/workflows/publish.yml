@@ -6,6 +6,10 @@ on:
 
 jobs:
   pypi:
+    # The repo also hosts the web/ site. Only `v*` tags release the Python
+    # package; any other tag namespace is ignored rather than failing the
+    # version check below.
+    if: startsWith(github.ref_name, 'v')
     runs-on: ubuntu-latest
     environment: pypi
     permissions:

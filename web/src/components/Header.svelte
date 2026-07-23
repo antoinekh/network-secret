@@ -10,9 +10,9 @@
 
 <header class="hdr">
   <div class="wrap top">
-    <a class="brand" href="/" use:link aria-label="Network Secret Decoder home">
+    <a class="brand" href="/" use:link aria-label="Network Secret home">
       <span class="mark mono">//</span>
-      <span class="word display">Network Secret Decoder</span>
+      <span class="word display">Network Secret</span>
     </a>
     <div class="top-right">
       <span class="meta mono">Runs locally · no backend</span>

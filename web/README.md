@@ -1,4 +1,4 @@
-# Network Secret Decoder
+# Network Secret - website
 
 A static, **fully client-side** toolkit to decode and encode network device secret formats. Every byte of computation happens in your browser - nothing is ever sent to a server - so it deploys to any static host (built for **Cloudflare Pages**).
 
