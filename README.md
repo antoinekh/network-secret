@@ -1,5 +1,10 @@
 # network-secret
 
+[![tests](https://github.com/antoinekh/network-secret/actions/workflows/test.yml/badge.svg)](https://github.com/antoinekh/network-secret/actions/workflows/test.yml)
+[![PyPI](https://img.shields.io/pypi/v/network-secret)](https://pypi.org/project/network-secret/)
+[![Python versions](https://img.shields.io/pypi/pyversions/network-secret)](https://pypi.org/project/network-secret/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Encode, decode, and check network device secrets for Juniper JunOS and Nokia SR OS, from the command line or Python. `network-secret` is a unified successor to `juniper8-crypt` and `juniper9-crypt`: it covers all three formats in a single package with a single CLI.
 
 > **Prefer a browser?** Encode and decode all three formats at **[network-secret.pages.dev](https://network-secret.pages.dev/)**. It runs the same algorithms fully client-side - nothing you type is ever sent to a server.

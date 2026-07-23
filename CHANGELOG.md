@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented here.
 
-## Unreleased
+## v0.1.1 - 2026-07-23
 
 ### Fixed
 
@@ -11,6 +11,11 @@ All notable changes to this project are documented here.
 ### Changed
 
 - The website now lives in this repo under `web/`, sharing the known-answer vectors that both the Python and TypeScript implementations are tested against.
+- The browser version moved to [network-secret.pages.dev](https://network-secret.pages.dev/); the README link was updated to match.
+
+### Docs
+
+- README: added tests, PyPI, Python versions, and licence badges.
 
 ## v0.1.0 - 2026-07-23
 
