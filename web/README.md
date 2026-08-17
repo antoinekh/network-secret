@@ -6,8 +6,8 @@ Formats:
 
 | #  | Format        | Vendor      | Kind                                 | Key             |
 |----|---------------|-------------|--------------------------------------|-----------------|
-| 01 | `$9$`         | Juniper     | reversible obfuscation               | none            |
-| 02 | `$8$`         | Juniper     | AES-256-GCM authenticated encryption | master password |
+| 01 | `$9$`         | Juniper/HPE | reversible obfuscation               | none            |
+| 02 | `$8$`         | Juniper/HPE | AES-256-GCM authenticated encryption | master password |
 | 03 | `custom-hash` | Nokia SR OS | AES-ECB + PKCS#7 (deterministic)     | shared AES key  |
 
 One page per format. Adding a converter is one module (see [Adding a converter](#adding-a-converter)).

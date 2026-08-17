@@ -34,9 +34,9 @@ export interface CipherExample {
 export interface CipherInfo {
   /** URL-safe identifier, e.g. "juniper9". Also the top-level path (`/juniper9`). */
   id: string;
-  /** Display name, e.g. "Juniper $9$". */
+  /** Display name, e.g. "Juniper/HPE $9$". */
   name: string;
-  /** Vendor, e.g. "Juniper". */
+  /** Vendor, e.g. "Juniper/HPE". */
   vendor: string;
   /** Magic prefix, e.g. "$9$". */
   magic: string;

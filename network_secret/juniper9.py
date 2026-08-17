@@ -1,9 +1,9 @@
 """
-Encrypt and decrypt Juniper $9$ reversible passwords.
+Encrypt and decrypt Juniper/HPE $9$ reversible passwords.
 
-The $9$ algorithm is a proprietary Juniper substitution cipher that is
+The $9$ algorithm is a proprietary Juniper/HPE substitution cipher that is
 deterministic and device-independent: the same plaintext can be encrypted
-on any Juniper device and decrypted on any other, with no node-specific
+on any Juniper/HPE device and decrypted on any other, with no node-specific
 secret involved.
 
 This is a Python implementation of the algorithm. It is based on
@@ -35,9 +35,9 @@ def _gap(c1: str, c2: str) -> int:
 
 
 def decrypt(ciphertext: str) -> str:
-    """Decrypt a Juniper $9$ ciphertext back to plaintext."""
+    """Decrypt a Juniper/HPE $9$ ciphertext back to plaintext."""
     if not ciphertext.startswith(MAGIC):
-        raise ValueError(f"Not a Juniper $9$ string: must start with {MAGIC}")
+        raise ValueError(f"Not a Juniper/HPE $9$ string: must start with {MAGIC}")
     chars = ciphertext[len(MAGIC):]
     if not chars:
         raise ValueError("Empty $9$ payload")
@@ -64,7 +64,7 @@ def decrypt(ciphertext: str) -> str:
 
 
 def encrypt(plaintext: str) -> str:
-    """Encrypt plaintext to a Juniper $9$ ciphertext.
+    """Encrypt plaintext to a Juniper/HPE $9$ ciphertext.
 
     Output is non-deterministic: random filler characters mean each call
     returns a different ciphertext for the same plaintext. All of them

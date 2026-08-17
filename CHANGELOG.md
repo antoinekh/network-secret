@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here. This covers both the Python package and the website under `web/`. The website carries no version of its own: it deploys continuously to Cloudflare Pages on every push to `master`, so its changes are recorded under the package release they shipped alongside.
 
+## Unreleased
+
+### Changed
+
+- Rebranded the Juniper vendor name to **Juniper/HPE** across the docs and website, following HPE's acquisition of Juniper. The code API (module names, CLI subcommands, URLs, env vars) is unchanged.
+
 ## v0.1.1 - 2026-07-23
 
 ### Fixed

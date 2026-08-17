@@ -5,7 +5,7 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/network-secret)](https://pypi.org/project/network-secret/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Encode, decode, and check network device secrets for Juniper JunOS and Nokia SR OS, from the command line or Python. `network-secret` is a unified successor to `juniper8-crypt` and `juniper9-crypt`: it covers all three formats in a single package with a single CLI.
+Encode, decode, and check network device secrets for Juniper/HPE JunOS and Nokia SR OS, from the command line or Python. `network-secret` is a unified successor to `juniper8-crypt` and `juniper9-crypt`: it covers all three formats in a single package with a single CLI.
 
 > **Prefer a browser?** Encode and decode all three formats at **[network-secret.pages.dev](https://network-secret.pages.dev/)**. It runs the same algorithms fully client-side - nothing you type is ever sent to a server.
 
@@ -25,8 +25,8 @@ The two implementations share known-answer vectors, so keeping them in one repo 
 
 | Format | CLI subcommand | Python module | Description |
 |--------|---------------|---------------|-------------|
-| `$9$` | `juniper9` | `network_secret.juniper9` | Juniper reversible obfuscation - keyless |
-| `$8$` | `juniper8` | `network_secret.juniper8` | Juniper AES-256-GCM - keyed by master password |
+| `$9$` | `juniper9` | `network_secret.juniper9` | Juniper/HPE reversible obfuscation - keyless |
+| `$8$` | `juniper8` | `network_secret.juniper8` | Juniper/HPE AES-256-GCM - keyed by master password |
 | Nokia custom-hash | `nokia-sros-custom-hash` | `network_secret.nokia_sros_custom_hash` | Nokia SR OS AES-ECB shared-key cipher |
 
 ## Install
@@ -46,12 +46,12 @@ uv add network-secret
 ```python
 from network_secret import juniper8, juniper9, nokia_sros_custom_hash
 
-# Juniper $9$ (keyless)
+# Juniper/HPE $9$ (keyless)
 cipher9 = juniper9.encrypt("BGPsecret1")
 plain9 = juniper9.decrypt(cipher9)
 # 'BGPsecret1'
 
-# Juniper $8$ (master-password keyed)
+# Juniper/HPE $8$ (master-password keyed)
 master = "MyMasterPassword"
 cipher8 = juniper8.encrypt("BGPsecret1", master)
 plain8 = juniper8.decrypt(cipher8, master)
@@ -80,7 +80,7 @@ network-secret --list
 network-secret --version
 ```
 
-### Juniper `$9$` (keyless)
+### Juniper/HPE `$9$` (keyless)
 
 ```bash
 network-secret juniper9 --encrypt 'BGPsecret1'
@@ -88,7 +88,7 @@ network-secret juniper9 --decrypt '$9$abc...'
 network-secret juniper9 --check '$9$abc...' 'BGPsecret1'
 ```
 
-### Juniper `$8$` (master-password keyed)
+### Juniper/HPE `$8$` (master-password keyed)
 
 The master password is resolved in this order: `-m`/`--master` flag, then the `JUNOS_MASTER_PASSWORD` environment variable, then an interactive no-echo prompt.
 
