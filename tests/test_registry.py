@@ -13,7 +13,7 @@ def test_registry_ids_and_order():
 
 
 def test_find_returns_cipher_or_none():
-    assert find("juniper8").vendor == "Juniper"
+    assert find("juniper8").vendor == "Juniper/HPE"
     assert find("does-not-exist") is None
 
 

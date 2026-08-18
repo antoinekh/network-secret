@@ -1,5 +1,5 @@
 /**
- * Juniper $8$ (type 8) authenticated encryption.
+ * Juniper/HPE $8$ (type 8) authenticated encryption.
  *
  * Unlike $9$, $8$ is genuine authenticated encryption keyed by the device
  * master password. Reverse-engineered and verified against a real JUNOS 23.2
@@ -105,7 +105,7 @@ export async function decode(encoded: string, master?: string): Promise<string> 
   }
   encoded = encoded.trim();
   if (!encoded.startsWith(MAGIC)) {
-    throw new Error("Not a Juniper $8$ string: must start with $8$");
+    throw new Error("Not a Juniper/HPE $8$ string: must start with $8$");
   }
   const parts = encoded.split("$");
   if (parts.length !== 9) {
@@ -148,11 +148,11 @@ export async function decode(encoded: string, master?: string): Promise<string> 
 
 export const juniper8: Cipher = {
   id: "juniper8",
-  name: "Juniper $8$",
-  vendor: "Juniper",
+  name: "Juniper/HPE $8$",
+  vendor: "Juniper/HPE",
   magic: "$8$",
   tagline:
-    "Juniper type 8 ($8$): master-password-keyed AES-256-GCM encryption for JUNOS secrets.",
+    "Juniper/HPE type 8 ($8$): master-password-keyed AES-256-GCM encryption for JUNOS secrets.",
   reversible: false,
   keyed: true,
   keyLabel: "Master password",

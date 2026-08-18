@@ -19,7 +19,7 @@
     <span class="reveal" style="animation-delay: 250ms">secrets.</span>
   </h1>
   <p class="lede reveal" style="animation-delay: 340ms">
-    Juniper <span class="mono">$9$</span>, Juniper <span class="mono">$8$</span>, and Nokia
+    Juniper/HPE <span class="mono">$9$</span>, Juniper/HPE <span class="mono">$8$</span>, and Nokia
     <span class="mono">custom-hash</span>, computed entirely in your browser. Nothing is ever
     sent to a server.
   </p>

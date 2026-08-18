@@ -13,8 +13,8 @@ from .types import Cipher, KeyKind
 REGISTRY: list[Cipher] = [
     Cipher(
         id="juniper9",
-        vendor="Juniper",
-        name="Juniper $9$",
+        vendor="Juniper/HPE",
+        name="Juniper/HPE $9$",
         key_kind=KeyKind.NONE,
         encrypt=juniper9.encrypt,
         decrypt=juniper9.decrypt,
@@ -22,8 +22,8 @@ REGISTRY: list[Cipher] = [
     ),
     Cipher(
         id="juniper8",
-        vendor="Juniper",
-        name="Juniper $8$",
+        vendor="Juniper/HPE",
+        name="Juniper/HPE $8$",
         key_kind=KeyKind.MASTER_PASSWORD,
         encrypt=juniper8.encrypt,
         decrypt=juniper8.decrypt,

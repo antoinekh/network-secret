@@ -1,14 +1,14 @@
 [project]
 name = "network-secret"
 version = "0.1.1"
-description = "Encode, decode, and check network device secrets: Juniper $9$, Juniper $8$, and Nokia SR OS custom-hash"
+description = "Encode, decode, and check network device secrets: Juniper/HPE $9$, Juniper/HPE $8$, and Nokia SR OS custom-hash"
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [
     { name = "Antoine Keranflec'h", email = "antoine.keranflech@gmail.com" },
 ]
 requires-python = ">=3.11"
-keywords = ["juniper", "junos", "nokia", "sros", "password", "crypt", "decrypt", "network", "$9$", "$8$", "custom-hash"]
+keywords = ["juniper", "hpe", "junos", "nokia", "sros", "password", "crypt", "decrypt", "network", "$9$", "$8$", "custom-hash"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",

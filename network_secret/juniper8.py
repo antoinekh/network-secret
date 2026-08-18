@@ -1,12 +1,12 @@
 """
-Encrypt and decrypt Juniper $8$ (type 8) passwords.
+Encrypt and decrypt Juniper/HPE $8$ (type 8) passwords.
 
 Unlike the reversible, keyless $9$ substitution cipher, the $8$ format is
 genuine authenticated encryption keyed by the device master password
 (``set system master-password``). The same master password is required to
 both encrypt and decrypt: without it, $8$ secrets cannot be recovered.
 
-Juniper documents the format, but the documentation is incomplete: it omits
+Juniper/HPE documents the format, but the documentation is incomplete: it omits
 that only the first 12 bytes of the 16-byte iv field are used as the GCM
 nonce, so a by-the-book implementation fails authentication. That missing
 detail was reverse-engineered and verified against a real JUNOS 23.2 device
@@ -79,7 +79,7 @@ def _derive_key(master_password: str, salt: bytes, iterations: int) -> bytes:
 
 
 def encrypt(plaintext: str, master_password: str) -> str:
-    """Encrypt plaintext into a Juniper $8$ value under master_password.
+    """Encrypt plaintext into a Juniper/HPE $8$ value under master_password.
 
     Output is non-deterministic: a fresh random salt and IV are generated on
     every call, so the same plaintext produces a different $8$ string each
@@ -109,13 +109,13 @@ def encrypt(plaintext: str, master_password: str) -> str:
 
 
 def decrypt(ciphertext: str, master_password: str) -> str:
-    """Decrypt a Juniper $8$ value with master_password.
+    """Decrypt a Juniper/HPE $8$ value with master_password.
 
     Raises ValueError on a malformed $8$ string or on authentication failure
     (wrong master password, or a value not produced by this scheme).
     """
     if not ciphertext.startswith(MAGIC):
-        raise ValueError(f"Not a Juniper $8$ string: must start with {MAGIC}")
+        raise ValueError(f"Not a Juniper/HPE $8$ string: must start with {MAGIC}")
 
     # Leading '$' yields an empty first element; '8' is the type tag.
     parts = ciphertext.split("$")

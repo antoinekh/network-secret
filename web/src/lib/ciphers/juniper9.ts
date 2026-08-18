@@ -1,8 +1,8 @@
 /**
- * Juniper $9$ reversible "encryption".
+ * Juniper/HPE $9$ reversible "encryption".
  *
  * $9$ is a keyless, device-independent substitution cipher: a value encoded on
- * one Juniper device decodes on any other with no node-specific secret. It is
+ * one Juniper/HPE device decodes on any other with no node-specific secret. It is
  * obfuscation, not cryptography - anyone with this code can recover the
  * plaintext. Ported from the public Crypt::Juniper / junosdecode algorithm.
  */
@@ -53,7 +53,7 @@ function gap(c1: string, c2: string): number {
 export function decode(encoded: string): string {
   encoded = encoded.trim();
   if (!encoded.startsWith(MAGIC)) {
-    throw new Error("Not a Juniper $9$ string: must start with $9$");
+    throw new Error("Not a Juniper/HPE $9$ string: must start with $9$");
   }
   let chars = encoded.slice(MAGIC.length);
   if (chars.length === 0) {
@@ -120,16 +120,16 @@ export function encode(plaintext: string): string {
 
 export const juniper9: Cipher = {
   id: "juniper9",
-  name: "Juniper $9$",
-  vendor: "Juniper",
+  name: "Juniper/HPE $9$",
+  vendor: "Juniper/HPE",
   magic: "$9$",
-  tagline: "Juniper type 9 ($9$): reversible, keyless obfuscation for JUNOS secrets.",
+  tagline: "Juniper/HPE type 9 ($9$): reversible, keyless obfuscation for JUNOS secrets.",
   reversible: true,
   keyed: false,
   status: "available",
   notes: [
     "$9$ is a substitution cipher, not real cryptography: it is reversible by anyone, with no key.",
-    "It is device-independent - a value encoded on one Juniper box decodes on any other.",
+    "It is device-independent - a value encoded on one Juniper/HPE box decodes on any other.",
     "Encoding is non-deterministic: random filler means the same plaintext yields a different $9$ string each time.",
     "Treat it as obfuscation against shoulder-surfing, never as protection.",
   ],
