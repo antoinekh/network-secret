@@ -5,9 +5,9 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/network-secret)](https://pypi.org/project/network-secret/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Encode, decode, and check network device secrets for Juniper/HPE JunOS, Nokia SR OS, and Cisco IOS, from the command line or Python. `network-secret` is a unified successor to `juniper8-crypt` and `juniper9-crypt`: it covers all eight formats in a single package with a single CLI.
+Encode, decode, and check network device secrets for Juniper/HPE JunOS, Nokia SR OS, and Cisco IOS, from the command line or Python. `network-secret` is a unified successor to `juniper8-crypt` and `juniper9-crypt`: it covers all nine formats in a single package with a single CLI.
 
-> **Prefer a browser?** Decode, encode, hash and verify all eight formats at **[network-secret.pages.dev](https://network-secret.pages.dev/)**. It runs the same algorithms fully client-side - nothing you type is ever sent to a server.
+> **Prefer a browser?** Decode, encode, hash and verify all nine formats at **[network-secret.pages.dev](https://network-secret.pages.dev/)**. It runs the same algorithms fully client-side - nothing you type is ever sent to a server.
 
 ## Repository layout
 
@@ -27,6 +27,7 @@ The two implementations share known-answer vectors, so keeping them in one repo 
 |--------|---------------|---------------|-------------|
 | `$9$` | `juniper9` | `network_secret.juniper9` | Juniper/HPE reversible obfuscation - keyless |
 | `$8$` | `juniper8` | `network_secret.juniper8` | Juniper/HPE AES-256-GCM - keyed by master password |
+| `$5$`/`$6$` | `juniper-encrypted-password` | `network_secret.juniper_encrypted_password` | Juniper/HPE JUNOS local-user encrypted-password (Unix SHA-crypt) - one-way |
 | Nokia custom-hash | `nokia-sros-custom-hash` | `network_secret.nokia_sros_custom_hash` | Nokia SR OS AES-ECB shared-key cipher |
 | `$2y$` | `nokia-sros-password` | `network_secret.nokia_sros_password` | Nokia SR OS bcrypt local user password hash - one-way |
 | Type 6 | `cisco-type6` | `network_secret.cisco_type6` | Cisco IOS reversible AES + HMAC - keyed by the master key |
@@ -51,7 +52,7 @@ uv add network-secret
 ## Python API
 
 ```python
-from network_secret import juniper8, juniper9, nokia_sros_custom_hash, nokia_sros_password
+from network_secret import juniper8, juniper9, juniper_encrypted_password, nokia_sros_custom_hash, nokia_sros_password
 
 # Juniper/HPE $9$ (keyless)
 cipher9 = juniper9.encrypt("BGPsecret1")
@@ -65,6 +66,16 @@ plain8 = juniper8.decrypt(cipher8, master)
 # 'BGPsecret1'
 plain_a, plain_b, match = juniper8.check(cipher8, "BGPsecret1", master)
 # match is True
+
+# Juniper/HPE JUNOS encrypted-password (Unix SHA-crypt, one-way)
+hash_jep = juniper_encrypted_password.encrypt("lab123")
+# '$6$OxsofBL3v2.ckv5z$6cnGooSbcNVCY44cBYiK7Kh.5q.TSZm/71tQMzXc/55aHCY0muFlu7fwjpUlRYd8XjxKlYv4LP.yIMBl2ntOn0' (a fresh salt every call, always starting '$6$')
+given, recomputed, match = juniper_encrypted_password.check(
+    "$5$itHMToxg$IAeDKDuWsSCoL2W7fognCW8cyNj4YE9ZhDvCoWFC5y/", "lab123"
+)
+# match is True
+juniper_encrypted_password.decrypt(hash_jep)
+# ValueError: JUNOS encrypted-password values are a one-way SHA-crypt hash and cannot be decrypted. Use --check to test a password against one.
 
 # Nokia SR OS custom-hash (16/24/32-character shared key)
 key = "a3f8d9e112c04b7af1c3e8b92d057a4e"
@@ -104,7 +115,7 @@ cisco_type8.decrypt(hash8)
 # ValueError: Cisco type 8 is a one-way hash and cannot be decrypted. Use --check to test a password against it.
 ```
 
-All eight `check()` functions return a `tuple[str, str, bool]`. For five of them the two strings are the decrypted plaintexts and whether they match. Nokia SR OS password, Cisco type 8 and Cisco type 9 cannot decrypt anything, so they return the hash you passed in, the hash recomputed from the candidate password, and whether those match. For Cisco type 6 and type 7, the second argument to `check()` is always read as cleartext, because neither format carries a marker that tells it apart from a password.
+All nine `check()` functions return a `tuple[str, str, bool]`. For five of them the two strings are the decrypted plaintexts and whether they match. Juniper/HPE encrypted-password, Nokia SR OS password, Cisco type 8 and Cisco type 9 cannot decrypt anything, so they return the hash you passed in, the hash recomputed from the candidate password, and whether those match. For Cisco type 6 and type 7, the second argument to `check()` is always read as cleartext, because neither format carries a marker that tells it apart from a password.
 
 ## Command-line usage
 
@@ -144,6 +155,26 @@ network-secret juniper8 --decrypt '$8$aes256-gcm$...'
 ```
 
 > Always quote `$8$` and `$9$` strings with single quotes - the shell expands `$8` and `$9` as positional parameters otherwise.
+
+### Juniper/HPE JUNOS encrypted-password (`$5$`/`$6$`, one-way)
+
+JUNOS stores local user passwords as standard Unix SHA-crypt, written in config as `encrypted-password "$5$salt$hash"; ## SECRET-DATA` (`$5$` is sha256-crypt, `$6$` is sha512-crypt). There is nothing to decrypt, so `--encrypt` hashes with a fresh random salt (always `$6$`, matching current JUNOS) and `--check` verifies a candidate password by reusing the salt, variant, and round count carried in the value you give it. `$1$` (md5crypt), which older JUNOS wrote, is deliberately not supported and is rejected by name.
+
+```bash
+network-secret juniper-encrypted-password --encrypt 'lab123'
+network-secret juniper-encrypted-password --check '$5$itHMToxg$IAeDKDuWsSCoL2W7fognCW8cyNj4YE9ZhDvCoWFC5y/' 'lab123'
+
+network-secret juniper-encrypted-password --decrypt '$6$OV3tvDvc$QT3FzP8LWnxLDCfDLKibn1.EzGS5crupCiea7Kbi2W4Y9Z1kYu9EYTxs/z344U8Mwh4QtwlnbUiLZWUHyhrZl1'
+# error: JUNOS encrypted-password values are a one-way SHA-crypt hash and cannot be decrypted. Use --check to test a password against one.
+```
+
+You can paste the value straight out of a JUNOS config, quotes, trailing `;` and `## SECRET-DATA` marker included, rather than trimming it down to the bare `$5$.../$6$...` value first:
+
+```bash
+network-secret juniper-encrypted-password --check '"$5$itHMToxg$IAeDKDuWsSCoL2W7fognCW8cyNj4YE9ZhDvCoWFC5y/"; ## SECRET-DATA' 'lab123'
+```
+
+Rounds are bounded to 1000-100000 (`MIN_ROUNDS`/`MAX_ROUNDS` in `network_secret/juniper_encrypted_password.py`). Drepper's SHA-crypt spec permits a `rounds=N$` field up to 999,999,999, read from the value being checked, and JUNOS itself never emits anything but its 5000 default; without this bound a pasted hash could force arbitrarily expensive work and hang the tool, the same reasoning behind `juniper8`'s PBKDF2 iteration bound and the Nokia `$2y$` format's bcrypt cost bound.
 
 ### Nokia SR OS custom-hash (shared-key)
 

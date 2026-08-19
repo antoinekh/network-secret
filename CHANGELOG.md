@@ -4,6 +4,15 @@ All notable changes to this project are documented here. This covers both the Py
 
 ## Unreleased
 
+### Added
+
+- Juniper/HPE JUNOS `encrypted-password` (`network_secret.juniper_encrypted_password`, `juniper-encrypted-password`): a one-way Unix SHA-crypt hash for local user passwords, written in config as `encrypted-password "$5$salt$hash"; ## SECRET-DATA` (`$5$` sha256-crypt, `$6$` sha512-crypt). `$1$` (md5crypt), which older JUNOS wrote, is rejected by name rather than falling through to a generic parse failure. Accepts the value pasted straight out of a config line, quotes, trailing `;` and `## SECRET-DATA` marker included. An optional `rounds=N$` field is bounded to 1000-100000, mirroring how `juniper8` bounds its iteration count and the Nokia `$2y$` format bounds its bcrypt cost; a non-canonical value such as `rounds=007000` is accepted and echoed back verbatim by `--check`, while `--encrypt` always writes the canonical form, matching `openssl passwd`. No new dependency on either side: `hashlib` and Web Crypto already provide SHA-256/SHA-512.
+- The website's Juniper/HPE `encrypted-password` converter, with Hash and Verify tabs and a one-way badge, next to the existing Juniper/HPE `$8$` converter.
+
+### Fixed
+
+- The `--list` id column was a fixed 24 characters, so the new 26-character `juniper-encrypted-password` id overflowed it and broke row alignment. Column widths are now derived from the registry (`max(len(c.id) ...)`, `max(len(c.vendor) ...)`), so a future long id cannot silently misalign the table again.
+
 ## v0.3.0 - 2026-08-19
 
 ### Added
