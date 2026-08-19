@@ -187,3 +187,12 @@ def test_juniper_encrypted_password_encrypt_defaults_to_sha512(capsys):
     assert main(["juniper-encrypted-password", "--encrypt", "hunter2"]) == 0
     out = capsys.readouterr().out.strip()
     assert out.startswith("$6$")
+
+
+def test_list_name_column_is_aligned(capsys):
+    """Regression guard: a long id (e.g. juniper-encrypted-password) must not
+    push its row's name column out of alignment with the other rows."""
+    assert main(["--list"]) == 0
+    lines = [line for line in capsys.readouterr().out.splitlines() if line]
+    offsets = {len(line) - len(line.split(None, 2)[2]) for line in lines}
+    assert len(offsets) == 1

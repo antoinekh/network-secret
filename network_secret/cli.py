@@ -92,8 +92,10 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.list:
+        id_width = max(len(c.id) for c in REGISTRY)
+        vendor_width = max(len(c.vendor) for c in REGISTRY)
         for c in REGISTRY:
-            print(f"{c.id:24} {c.vendor:12} {c.name}")
+            print(f"{c.id:{id_width}}  {c.vendor:{vendor_width}}  {c.name}")
         return 0
 
     if args.cipher is None:
