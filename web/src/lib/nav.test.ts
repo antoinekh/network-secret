@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { catalogue } from "./ciphers/registry";
-import { vendorGroups } from "./nav";
+import { toggleVendor, vendorGroups } from "./nav";
 
 // Importing the catalogue pulls in the explainer components, which use the
 // `link` action from `./router`. That module reads `window.location` at
@@ -52,5 +52,19 @@ describe("vendorGroups", () => {
   it("puts all four Cisco entries in one group", () => {
     const cisco = vendorGroups(catalogue).find((g) => g.vendor === "Cisco IOS");
     expect(cisco?.entries).toHaveLength(4);
+  });
+});
+
+describe("toggleVendor", () => {
+  it("opens a vendor's menu from closed", () => {
+    expect(toggleVendor(null, "Cisco IOS")).toBe("Cisco IOS");
+  });
+
+  it("closes the vendor's own menu when clicked again", () => {
+    expect(toggleVendor("Cisco IOS", "Cisco IOS")).toBeNull();
+  });
+
+  it("switches straight to a different vendor without needing a second click", () => {
+    expect(toggleVendor("Juniper/HPE", "Cisco IOS")).toBe("Cisco IOS");
   });
 });

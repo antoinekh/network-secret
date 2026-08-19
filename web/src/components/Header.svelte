@@ -1,11 +1,17 @@
 <script lang="ts">
   import { path, link } from "../lib/router";
   import { catalogue } from "../lib/ciphers/registry";
-  import { vendorGroups } from "../lib/nav";
+  import { toggleVendor, vendorGroups } from "../lib/nav";
   import { theme, toggleTheme } from "../lib/theme";
 
   const groups = vendorGroups(catalogue);
   let open = $state<string | null>(null);
+  const triggers: Record<string, HTMLButtonElement> = {};
+
+  // Touch browsers synthesise mouseenter on tap, which would fight the click
+  // toggle below. Only attach hover on devices that genuinely hover.
+  const canHover =
+    typeof window !== "undefined" && window.matchMedia("(hover: hover)").matches;
 
   function isActive(current: string, href: string): boolean {
     return (current.replace(/\/+$/, "") || "/") === href;
@@ -17,7 +23,12 @@
   }
 
   function onKeydown(event: KeyboardEvent) {
-    if (event.key === "Escape") open = null;
+    if (event.key !== "Escape") return;
+    const wasOpen = open;
+    open = null;
+    // Return focus to the trigger the menu came from, rather than letting it
+    // fall to <body> when the focused menu item is removed from the DOM.
+    if (wasOpen) triggers[wasOpen]?.focus();
   }
 </script>
 
@@ -54,49 +65,49 @@
         <div
           class="group"
           role="none"
-          onmouseenter={() => (open = group.vendor)}
-          onmouseleave={() => (open = null)}
+          onmouseenter={canHover ? () => (open = group.vendor) : undefined}
+          onmouseleave={canHover ? () => (open = null) : undefined}
         >
           <button
             class="tab"
             class:active={groupIsActive(group.vendor)}
-            aria-haspopup="menu"
+            aria-haspopup="true"
             aria-expanded={open === group.vendor}
+            bind:this={triggers[group.vendor]}
             onclick={(e) => {
               e.stopPropagation();
-              open = open === group.vendor ? null : group.vendor;
+              open = toggleVendor(open, group.vendor);
             }}
-            onfocus={() => (open = group.vendor)}
           >
             {group.vendor}<span class="caret" aria-hidden="true">▾</span>
           </button>
           {#if open === group.vendor}
-            <div class="menu" role="menu">
+            <ul class="menu">
               {#each group.entries as entry (entry.id)}
-                {#if entry.kind === "explainer"}
-                  <a
-                    class="item"
-                    role="menuitem"
-                    class:current={isActive($path, `/${entry.id}`)}
-                    href={`/${entry.id}`}
-                    use:link>{entry.name}<span class="pill">doc</span></a
-                  >
-                {:else if entry.status === "available"}
-                  <a
-                    class="item"
-                    role="menuitem"
-                    class:current={isActive($path, `/${entry.id}`)}
-                    href={`/${entry.id}`}
-                    use:link
-                    >{entry.name}{#if entry.oneWay}<span class="pill">one-way</span>{/if}</a
-                  >
-                {:else}
-                  <span class="item disabled" role="menuitem"
-                    >{entry.name}<span class="pill">soon</span></span
-                  >
-                {/if}
+                <li>
+                  {#if entry.kind === "explainer"}
+                    <a
+                      class="item"
+                      class:current={isActive($path, `/${entry.id}`)}
+                      href={`/${entry.id}`}
+                      use:link>{entry.name}<span class="pill">doc</span></a
+                    >
+                  {:else if entry.status === "available"}
+                    <a
+                      class="item"
+                      class:current={isActive($path, `/${entry.id}`)}
+                      href={`/${entry.id}`}
+                      use:link
+                      >{entry.name}{#if entry.oneWay}<span class="pill">one-way</span>{/if}</a
+                    >
+                  {:else}
+                    <span class="item disabled" aria-disabled="true"
+                      >{entry.name}<span class="pill">soon</span></span
+                    >
+                  {/if}
+                </li>
               {/each}
-            </div>
+            </ul>
           {/if}
         </div>
       {/each}
@@ -218,6 +229,8 @@
     display: flex;
     flex-direction: column;
     padding: 0.35rem;
+    margin: 0;
+    list-style: none;
     background: var(--paper-2);
     border: 1px solid var(--line);
     border-radius: var(--radius-sm);
