@@ -108,40 +108,54 @@ describe("juniper encrypted-password: round trips and rounds= form", () => {
   });
 });
 
-describe("juniper encrypted-password: non-canonical rounds field is preserved verbatim", () => {
+describe("juniper encrypted-password: rounds field asymmetry (encrypt canonicalises, verify preserves)", () => {
   // A "rounds=007000$..." field (leading zeros) is accepted by openssl and
-  // hashes identically to "rounds=7000$...". `format` must echo the exact
-  // digit substring it parsed, not `String(rounds)` - otherwise a correct
-  // password against a non-canonical field would report as a mismatch (the
-  // recomputed value would read "rounds=7000$" while the given value reads
-  // "rounds=007000$").
-  it.each([
-    [MAGIC_SHA256, "rounds=5000$"], // canonical, at the default count
-    [MAGIC_SHA256, "rounds=007000$"], // non-canonical: leading zeros
-    [MAGIC_SHA512, "rounds=007000$"], // same, other variant
-  ])("preserves %s%srounds field verbatim", async (magic, roundsField) => {
-    const value = await encryptWithSalt(
-      VECTOR_PASSWORD,
-      `${magic}${roundsField}abcdefgh`,
-    );
-    expect(value.startsWith(`${magic}${roundsField}abcdefgh$`)).toBe(true);
-    expect(await verify(value, VECTOR_PASSWORD)).toBe(true);
+  // hashes identically to "rounds=7000$...". The two entry points must
+  // deliberately disagree on what they *write*: `encryptWithSalt` is
+  // minting a brand new value and must not inherit another tool's
+  // formatting quirks (it canonicalises), while `verify` is echoing back
+  // what the user pasted and must reproduce it byte for byte to compare
+  // correctly (it preserves the raw digits). Mirrors Python's
+  // `encrypt`/`check` split on this branch exactly.
+
+  // Real openssl output: `openssl passwd -5/-6 -salt 'rounds=7000$abcdefgh'
+  // lab123`. Cross-checking encryptWithSalt's canonicalised output against
+  // openssl directly - a third implementation - rules out TS and Python
+  // quietly agreeing on the same bug.
+  const OPENSSL_CANONICAL_SHA256 =
+    "$5$rounds=7000$abcdefgh$kdN5PnJqWO7Kjpjd.tXEYwKq64Z2SoXjgo2SqSFCC87";
+  const OPENSSL_CANONICAL_SHA512 =
+    "$6$rounds=7000$abcdefgh$sI/ipHpgRHdKDg6kPyRGMV6JVrTreVzWJzNDcNGlIi." +
+    "FrxqaOd5hmrrFI20S/gEmON6Tj46C4X/NpaPpRPpkx0";
+
+  it("encryptWithSalt canonicalises a non-canonical rounds= argument ($5$), matching openssl", async () => {
+    const value = await encryptWithSalt(VECTOR_PASSWORD, "$5$rounds=007000$abcdefgh");
+    expect(value.includes("rounds=007000")).toBe(false);
+    expect(value).toBe(OPENSSL_CANONICAL_SHA256);
   });
 
-  // Real digest cross-checked against `openssl passwd -6 -salt
-  // 'rounds=007000$abcdefgh' lab123`, which accepts the leading zeros and
-  // computes this exact digest (identical to the canonical `rounds=7000`).
-  // Ported directly from tests/test_juniper_encrypted_password.py's
-  // _NON_CANONICAL_ROUNDS_VECTOR.
+  it("encryptWithSalt canonicalises a non-canonical rounds= argument ($6$), matching openssl", async () => {
+    const value = await encryptWithSalt(VECTOR_PASSWORD, "$6$rounds=007000$abcdefgh");
+    expect(value.includes("rounds=007000")).toBe(false);
+    expect(value).toBe(OPENSSL_CANONICAL_SHA512);
+  });
+
+  // A literal string, never built via encryptWithSalt: if encryptWithSalt's
+  // canonicalisation were broken, this test must not be able to agree with
+  // itself. Its digest is cross-checked against `openssl passwd -6 -salt
+  // 'rounds=007000$abcdefgh' lab123`, which is identical to
+  // OPENSSL_CANONICAL_SHA512's digest above - non-canonical digits parse to
+  // the same numeric round count, only the display differs. Ported from
+  // tests/test_juniper_encrypted_password.py's _NON_CANONICAL_ROUNDS_VECTOR.
   const NON_CANONICAL_ROUNDS_VECTOR =
     "$6$rounds=007000$abcdefgh$sI/ipHpgRHdKDg6kPyRGMV6JVrTreVzWJzNDcNGlIi." +
     "FrxqaOd5hmrrFI20S/gEmON6Tj46C4X/NpaPpRPpkx0";
 
-  it("accepts a correct password against the non-canonical-rounds vector", async () => {
+  it("verify preserves the given rounds= digits verbatim, leading zeros and all", async () => {
     expect(await verify(NON_CANONICAL_ROUNDS_VECTOR, VECTOR_PASSWORD)).toBe(true);
   });
 
-  it("rejects a wrong password against the non-canonical-rounds vector", async () => {
+  it("verify rejects a wrong password against the non-canonical-rounds vector", async () => {
     expect(await verify(NON_CANONICAL_ROUNDS_VECTOR, "wrong")).toBe(false);
   });
 });

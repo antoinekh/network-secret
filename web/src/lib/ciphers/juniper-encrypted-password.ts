@@ -34,6 +34,7 @@
  */
 
 import {
+  ALPHABET,
   encodeDigest,
   generateSalt,
   hashPassword,
@@ -182,7 +183,7 @@ function validateSalt(salt: string): void {
     throw new Error(`Salt too long (max ${MAX_SALT_LEN} characters): '${salt}'`);
   }
   for (const ch of salt) {
-    if (!ALPHABET_HAS(ch)) {
+    if (!ALPHABET.includes(ch)) {
       throw new Error(`Character '${ch}' is not in the crypt alphabet: salt '${salt}'`);
     }
   }
@@ -191,7 +192,7 @@ function validateSalt(salt: string): void {
 function validateHashField(hashField: string, magic: string): void {
   if (!hashField) throw new Error("Malformed value: empty hash field");
   for (const ch of hashField) {
-    if (!ALPHABET_HAS(ch)) {
+    if (!ALPHABET.includes(ch)) {
       throw new Error(
         `Character '${ch}' is not in the crypt alphabet: hash '${hashField}'`,
       );
@@ -204,12 +205,6 @@ function validateHashField(hashField: string, magic: string): void {
         `got ${hashField.length}`,
     );
   }
-}
-
-const CRYPT_ALPHABET =
-  "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-function ALPHABET_HAS(ch: string): boolean {
-  return CRYPT_ALPHABET.includes(ch);
 }
 
 /**
@@ -271,16 +266,26 @@ async function compute(
 }
 
 /**
- * Assemble "$N$[rounds=<raw>$]salt$hash". See `splitRounds` for why
- * `roundsRaw` is the original digit substring, not `String(rounds)`.
+ * Assemble "$N$[rounds=<roundsDisplay>$]salt$hash".
+ *
+ * `roundsDisplay` is the exact digit string to write, or null to omit the
+ * field entirely. The two callers deliberately pass different things here:
+ * `verify` passes the raw digit substring parsed from the given value
+ * (preserving e.g. non-canonical leading zeros, so a correct password's
+ * recomputation matches what the user pasted - see `splitRounds`), while
+ * `encryptWithSalt` passes `String(rounds)` (canonical digits only, since it
+ * is minting a brand new value and must never inherit another tool's
+ * formatting quirks - matching `openssl passwd`, which likewise accepts
+ * non-canonical rounds on input but always normalises its own output).
+ * Mirrors Python's `_format`/`encrypt`/`check` split on this branch.
  */
 function format(
   magic: string,
-  roundsRaw: string | null,
+  roundsDisplay: string | null,
   salt: string,
   encoded: string,
 ): string {
-  const roundsField = roundsRaw !== null ? `${ROUNDS_PREFIX}${roundsRaw}$` : "";
+  const roundsField = roundsDisplay !== null ? `${ROUNDS_PREFIX}${roundsDisplay}$` : "";
   return `${magic}${roundsField}${salt}$${encoded}`;
 }
 
@@ -312,11 +317,19 @@ export async function encode(plaintext: string): Promise<string> {
  * argument. See `parseSaltArg` for the accepted forms. Exported (but not
  * part of the `Cipher` interface) so tests can exercise the "$5$" variant
  * and the "rounds=" form directly, the way the Python suite does.
+ *
+ * Canonicalises the rounds field: a "rounds=007000$..." argument produces
+ * "rounds=7000$..." in the output. This is a freshly minted value, so it
+ * must not inherit another tool's non-canonical formatting - unlike
+ * `verify`, which preserves the raw digits it was given because it is
+ * echoing back what the user pasted. See `format`'s docstring for the full
+ * rationale (mirrors Python's `encrypt`/`check` split exactly).
  */
 export async function encryptWithSalt(plaintext: string, saltArg: string): Promise<string> {
   const { magic, rounds, roundsRaw, salt } = parseSaltArg(saltArg);
+  const roundsDisplay = roundsRaw !== null ? String(rounds) : null;
   const encoded = await compute(magic, plaintext, salt, rounds);
-  return format(magic, roundsRaw, salt, encoded);
+  return format(magic, roundsDisplay, salt, encoded);
 }
 
 /** Always throws: encrypted-password is a one-way hash, not a cipher. */
