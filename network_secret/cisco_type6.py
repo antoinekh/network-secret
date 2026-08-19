@@ -36,7 +36,7 @@ import os
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-__all__ = ["decrypt", "encrypt", "check"]
+__all__ = ["decrypt", "encrypt", "check", "ENV_MASTER_KEY"]
 
 # Environment variable the CLI reads the master key from when --master is not
 # given on the command line.
