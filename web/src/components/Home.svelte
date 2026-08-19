@@ -2,6 +2,7 @@
   import { link } from "../lib/router";
   import { catalogue } from "../lib/ciphers/registry";
   import Badge from "./Badge.svelte";
+  import { formatVendorList } from "./vendor-list";
 
   const converters = catalogue.filter((c) => c.kind === "converter");
   const available = converters.filter((c) => c.status === "available").length;
@@ -11,10 +12,7 @@
   // Derived, never hardcoded: web/CLAUDE.md requires the page to follow the
   // catalogue, and the old hardcoded sentence went stale as formats were added.
   const vendors = [...new Set(catalogue.map((c) => c.vendor))];
-  const vendorList =
-    vendors.length > 1
-      ? `${vendors.slice(0, -1).join(", ")} and ${vendors[vendors.length - 1]}`
-      : vendors[0];
+  const vendorList = formatVendorList(vendors);
 </script>
 
 <section class="hero wrap">

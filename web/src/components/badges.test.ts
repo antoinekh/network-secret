@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { catalogue } from "../lib/ciphers/registry";
+import { formatVendorList } from "./vendor-list";
 
 // Importing the catalogue pulls in the explainer components, which use the
 // `link` action from `../lib/router`. That module reads `window.location` at
@@ -28,5 +29,21 @@ describe("catalogue badges", () => {
     const vendors = [...new Set(catalogue.map((c) => c.vendor))];
     expect(vendors).toEqual(["Juniper/HPE", "Nokia SR OS", "Cisco IOS"]);
     expect(new Set(vendors).size).toBe(vendors.length);
+  });
+});
+
+describe("formatVendorList", () => {
+  it("degrades to a sensible default for an empty catalogue", () => {
+    expect(formatVendorList([])).toBe("network devices");
+  });
+
+  it("returns the vendor name unchanged for a single vendor", () => {
+    expect(formatVendorList(["Juniper/HPE"])).toBe("Juniper/HPE");
+  });
+
+  it("joins three or more vendors with commas and a trailing 'and'", () => {
+    expect(formatVendorList(["Juniper/HPE", "Nokia SR OS", "Cisco IOS"])).toBe(
+      "Juniper/HPE, Nokia SR OS and Cisco IOS",
+    );
   });
 });
