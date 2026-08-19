@@ -59,7 +59,9 @@
             </span>
             <span class="badges">
               <Badge label={c.vendor} />
-              {#if c.reversible}
+              {#if c.oneWay}
+                <Badge label="One-way" tone="accent" />
+              {:else if c.reversible}
                 <Badge label="Reversible" />
               {:else if c.keyed}
                 <Badge label="Keyed" tone="accent" />
