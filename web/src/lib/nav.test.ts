@@ -32,6 +32,7 @@ describe("vendorGroups", () => {
     expect(groups[0].entries.map((e) => e.id)).toEqual(["juniper9", "juniper8"]);
     expect(groups[1].entries.map((e) => e.id)).toEqual([
       "nokia-custom-hash",
+      "nokia-sros-password",
       "hash",
       "hash2",
       "hash3",
@@ -44,9 +45,9 @@ describe("vendorGroups", () => {
     ]);
   });
 
-  it("puts all four Nokia entries in one group", () => {
+  it("puts all five Nokia entries in one group", () => {
     const nokia = vendorGroups(catalogue).find((g) => g.vendor === "Nokia SR OS");
-    expect(nokia?.entries).toHaveLength(4);
+    expect(nokia?.entries).toHaveLength(5);
   });
 
   it("puts all four Cisco entries in one group", () => {

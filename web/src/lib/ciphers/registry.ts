@@ -14,6 +14,7 @@ import type { CatalogueEntry, ConverterEntry } from "./types";
 import { juniper9 } from "./juniper9";
 import { juniper8 } from "./juniper8";
 import { nokiaCustomHash } from "./nokia-custom-hash";
+import { nokiaSrosPassword } from "./nokia-sros-password";
 import { ciscoType6 } from "./cisco-type6";
 import { ciscoType7 } from "./cisco-type7";
 import { ciscoType8 } from "./cisco-type8";
@@ -24,6 +25,7 @@ const ciphers = [
   juniper9,
   juniper8,
   nokiaCustomHash,
+  nokiaSrosPassword,
   ciscoType6,
   ciscoType7,
   ciscoType8,
