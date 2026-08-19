@@ -8,6 +8,7 @@ def test_registry_ids_and_order():
     assert [c.id for c in REGISTRY] == [
         "juniper9",
         "juniper8",
+        "juniper-encrypted-password",
         "nokia-sros-custom-hash",
         "nokia-sros-password",
         "cisco-type6",
@@ -43,8 +44,8 @@ def test_cisco_ciphers_are_registered(cipher_id):
     assert find(cipher_id) is not None
 
 
-def test_registry_holds_eight_ciphers():
-    assert len(REGISTRY) == 8
+def test_registry_holds_nine_ciphers():
+    assert len(REGISTRY) == 9
 
 
 def test_registry_ids_are_unique():
