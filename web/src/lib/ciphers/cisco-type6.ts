@@ -172,6 +172,18 @@ export const ciscoType6: Cipher = {
     plaintext: "password",
     key: "cisco123",
   },
+  links: [
+    {
+      label: "github.com/antoinekh/network-secret",
+      url: "https://github.com/antoinekh/network-secret",
+      note: "Python library & CLI.",
+    },
+    {
+      label: "github.com/CiscoDevNet/Type-6-Password-Encode",
+      url: "https://github.com/CiscoDevNet/Type-6-Password-Encode",
+      note: "Cisco's own reference implementation and test vectors.",
+    },
+  ],
   encode,
   decode,
 };

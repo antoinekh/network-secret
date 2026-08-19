@@ -171,8 +171,8 @@ export const juniper8: Cipher = {
   },
   links: [
     {
-      label: "github.com/antoinekh/juniper8-crypt",
-      url: "https://github.com/antoinekh/juniper8-crypt",
+      label: "github.com/antoinekh/network-secret",
+      url: "https://github.com/antoinekh/network-secret",
       note: "Python library & CLI, plus how the format was reverse-engineered.",
     },
   ],

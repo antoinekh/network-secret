@@ -1,10 +1,23 @@
 <script lang="ts">
   import { path, link } from "../lib/router";
   import { catalogue } from "../lib/ciphers/registry";
+  import { vendorGroups } from "../lib/nav";
   import { theme, toggleTheme } from "../lib/theme";
+
+  const groups = vendorGroups(catalogue);
+  let open = $state<string | null>(null);
 
   function isActive(current: string, href: string): boolean {
     return (current.replace(/\/+$/, "") || "/") === href;
+  }
+
+  function groupIsActive(vendor: string): boolean {
+    const group = groups.find((g) => g.vendor === vendor);
+    return group?.entries.some((e) => isActive($path, `/${e.id}`)) ?? false;
+  }
+
+  function onKeydown(event: KeyboardEvent) {
+    if (event.key === "Escape") open = null;
   }
 </script>
 
@@ -29,25 +42,61 @@
   <nav class="nav-wrap" aria-label="Sections">
     <div class="wrap nav">
       <a class="tab" class:active={isActive($path, "/")} href="/" use:link>Catalogue</a>
-      {#each catalogue as c (c.id)}
-        {#if c.kind === "explainer"}
-          <a
-            class="tab withpill"
-            class:active={isActive($path, `/${c.id}`)}
-            href={`/${c.id}`}
-            use:link>{c.name}<span class="pill">doc</span></a
+      {#each groups as group (group.vendor)}
+        <div
+          class="group"
+          role="none"
+          onmouseenter={() => (open = group.vendor)}
+          onmouseleave={() => (open = null)}
+        >
+          <button
+            class="tab"
+            class:active={groupIsActive(group.vendor)}
+            aria-haspopup="menu"
+            aria-expanded={open === group.vendor}
+            onclick={(e) => {
+              e.stopPropagation();
+              open = open === group.vendor ? null : group.vendor;
+            }}
+            onfocus={() => (open = group.vendor)}
           >
-        {:else if c.status === "available"}
-          <a class="tab" class:active={isActive($path, `/${c.id}`)} href={`/${c.id}`} use:link
-            >{c.name}</a
-          >
-        {:else}
-          <span class="tab disabled">{c.name}<span class="pill">soon</span></span>
-        {/if}
+            {group.vendor}<span class="caret" aria-hidden="true">▾</span>
+          </button>
+          {#if open === group.vendor}
+            <div class="menu" role="menu">
+              {#each group.entries as entry (entry.id)}
+                {#if entry.kind === "explainer"}
+                  <a
+                    class="item"
+                    role="menuitem"
+                    class:current={isActive($path, `/${entry.id}`)}
+                    href={`/${entry.id}`}
+                    use:link>{entry.name}<span class="pill">doc</span></a
+                  >
+                {:else if entry.status === "available"}
+                  <a
+                    class="item"
+                    role="menuitem"
+                    class:current={isActive($path, `/${entry.id}`)}
+                    href={`/${entry.id}`}
+                    use:link
+                    >{entry.name}{#if entry.oneWay}<span class="pill">one-way</span>{/if}</a
+                  >
+                {:else}
+                  <span class="item disabled" role="menuitem"
+                    >{entry.name}<span class="pill">soon</span></span
+                  >
+                {/if}
+              {/each}
+            </div>
+          {/if}
+        </div>
       {/each}
     </div>
   </nav>
 </header>
+
+<svelte:window onkeydown={onKeydown} onclick={() => (open = null)} />
 
 <style>
   .hdr {
@@ -125,11 +174,65 @@
   .nav {
     display: flex;
     gap: 0.4rem;
-    overflow-x: auto;
-    scrollbar-width: none;
+    flex-wrap: wrap;
   }
   .nav::-webkit-scrollbar {
     display: none;
+  }
+  .group {
+    position: relative;
+    flex: 0 0 auto;
+  }
+  .group .tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+  .caret {
+    font-size: 0.6rem;
+    opacity: 0.7;
+  }
+  .menu {
+    position: absolute;
+    top: calc(100% + 0.35rem);
+    left: 0;
+    z-index: 30;
+    min-width: 14rem;
+    display: flex;
+    flex-direction: column;
+    padding: 0.35rem;
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+  }
+  .item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6em;
+    padding: 0.5rem 0.7rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+  a.item:hover {
+    color: var(--ink);
+    background: var(--paper-3);
+  }
+  .item.current {
+    color: #fff;
+    background: var(--accent);
+  }
+  .item.disabled {
+    color: var(--ink-3);
+    opacity: 0.6;
+    cursor: default;
   }
   .tab {
     flex: 0 0 auto;
@@ -151,17 +254,6 @@
   .tab.active {
     color: #fff;
     background: var(--accent);
-  }
-  .tab.disabled,
-  .tab.withpill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45em;
-  }
-  .tab.disabled {
-    color: var(--ink-3);
-    opacity: 0.6;
-    cursor: default;
   }
   .pill {
     font-size: 0.56rem;

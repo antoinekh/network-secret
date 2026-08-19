@@ -81,6 +81,18 @@ export const ciscoType7: Cipher = {
     "IOS emits a seed of 0 to 15, so the same secret encodes 16 different ways. All of them decode identically.",
   ],
   example: { encoded: "060506324F41", plaintext: "cisco" },
+  links: [
+    {
+      label: "github.com/antoinekh/network-secret",
+      url: "https://github.com/antoinekh/network-secret",
+      note: "Python library & CLI.",
+    },
+    {
+      label: "github.com/CiscoDevNet/Type-6-Password-Encode",
+      url: "https://github.com/CiscoDevNet/Type-6-Password-Encode",
+      note: "Cisco's own reference implementation and test vectors.",
+    },
+  ],
   encode,
   decode,
 };

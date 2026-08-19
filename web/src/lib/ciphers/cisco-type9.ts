@@ -47,6 +47,18 @@ export const ciscoType9: Cipher = {
     encoded: "$9$ihSswXDbk0kaVK$o.uyR2nMrWtjMkrQwBXUR5lVuVt/KzG23rmYvshODXI",
     plaintext: "cisco123",
   },
+  links: [
+    {
+      label: "github.com/antoinekh/network-secret",
+      url: "https://github.com/antoinekh/network-secret",
+      note: "Python library & CLI.",
+    },
+    {
+      label: "github.com/CiscoDevNet/Type-6-Password-Encode",
+      url: "https://github.com/CiscoDevNet/Type-6-Password-Encode",
+      note: "Cisco's own reference implementation and test vectors.",
+    },
+  ],
   async encode(plaintext: string): Promise<string> {
     return hashPassword(plaintext, kdf, TYPE_NUMBER);
   },
