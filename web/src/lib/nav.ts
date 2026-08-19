@@ -2,7 +2,7 @@
  * Group the catalogue by vendor for the navigation bar.
  *
  * The bar lists one menu per vendor rather than one tab per format: with
- * eleven entries a flat row no longer fits. Groups and the entries inside
+ * ten entries a flat row no longer fits. Groups and the entries inside
  * them keep catalogue order, so the registry stays the single place that
  * decides what appears and in what sequence.
  */
