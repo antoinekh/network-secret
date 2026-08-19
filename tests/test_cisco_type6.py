@@ -116,6 +116,11 @@ def test_encrypt_rejects_an_oversized_plaintext():
         cisco_type6.encrypt("x" * (cisco_type6.MAX_PLAINTEXT_LEN + 1), VECTOR_MASTER)
 
 
+def test_b41_encode_rejects_empty_input():
+    with pytest.raises(ValueError, match="Nothing to encode"):
+        cisco_type6._b41_encode(b"")
+
+
 def test_decrypt_rejects_an_oversized_body():
     """A body the one-byte keystream counter cannot address must raise the
     module's own error, not an internal error from the keystream or a

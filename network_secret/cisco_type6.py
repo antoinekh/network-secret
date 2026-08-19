@@ -65,6 +65,8 @@ def _b41_encode(data: bytes) -> str:
     The pad group carries the odd trailing byte when the input length is odd,
     and the marker (0x00, 0x01) when it is even.
     """
+    if not data:
+        raise ValueError("Nothing to encode")
     pad = bytes([data[-1], 0x00]) if len(data) % 2 else b"\x00\x01"
     pairs = [data[i : i + 2] for i in range(0, len(data) - len(data) % 2, 2)]
     pairs.append(pad)

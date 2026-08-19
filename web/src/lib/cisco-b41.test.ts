@@ -44,4 +44,8 @@ describe("base41", () => {
   it("rejects an empty string", () => {
     expect(() => b41Decode("")).toThrow();
   });
+
+  it("rejects empty input to encode", () => {
+    expect(() => b41Encode(new Uint8Array(0))).toThrow("Nothing to encode");
+  });
 });
