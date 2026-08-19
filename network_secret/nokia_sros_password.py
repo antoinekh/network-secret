@@ -43,8 +43,14 @@ _LIB_PREFIX = "2b"
 _ALPHABET = "./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 SALT_CHARS = 22
 DIGEST_CHARS = 31
-_MIN_COST = 4
-_MAX_COST = 31
+
+# bcrypt's cost is an exponent, and it is read from the value being checked, so
+# an unbounded cost lets a hostile hash force arbitrarily expensive work: cost
+# 31 takes hundreds of hours. Measured on a 2026 laptop: cost 10 is 0.11s, cost
+# 14 is 1.9s, cost 16 is 7.1s. 16 accepts any hash a real system produces while
+# keeping the worst case bounded. SR OS itself only ever emits cost 10.
+MIN_COST = 4
+MAX_COST = 16
 
 
 def _split_prefix(text: str) -> tuple[str, str]:
@@ -62,9 +68,9 @@ def _validate_cost(cost: str) -> None:
     if not cost.isdigit():
         raise ValueError(f"bcrypt cost must be numeric: {cost!r}")
     value = int(cost)
-    if not (_MIN_COST <= value <= _MAX_COST):
+    if not (MIN_COST <= value <= MAX_COST):
         raise ValueError(
-            f"bcrypt cost out of range ({_MIN_COST}-{_MAX_COST}): {value}"
+            f"bcrypt cost out of range ({MIN_COST}-{MAX_COST}): {value}"
         )
 
 

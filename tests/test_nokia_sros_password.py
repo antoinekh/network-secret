@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import time
+
 import bcrypt
 import pytest
 
@@ -110,3 +112,41 @@ def test_check_rejects_malformed(value):
 def test_encrypt_rejects_invalid_salt(bad_salt):
     with pytest.raises(ValueError):
         nokia.encrypt(VECTOR_PASSWORD, salt=bad_salt)
+
+
+def test_max_cost_is_accepted_by_the_parser():
+    """Cost 16 (MAX_COST) is a legal, bounded cost: the salt parser accepts it.
+
+    This only exercises parsing/validation, not bcrypt.hashpw itself: hashing
+    at cost 16 is measured at ~7s (see the MAX_COST comment in the module),
+    which is too slow for a unit test to actually perform.
+    """
+    salt_at_max_cost = f"$2y${nokia.MAX_COST}$jBwKMP7r.vf4x1tbThl7Y."
+    prefix_tag, cost, salt_chars = nokia._parse_salt(salt_at_max_cost)
+    assert prefix_tag == "2y"
+    assert cost == str(nokia.MAX_COST)
+    assert salt_chars == "jBwKMP7r.vf4x1tbThl7Y."
+
+
+@pytest.mark.parametrize("cost", [17, 31])
+def test_cost_above_max_is_rejected_quickly(cost):
+    """A cost above MAX_COST must be rejected before ever reaching bcrypt.
+
+    Cost 31 takes on the order of hundreds of hours to actually hash (bcrypt's
+    cost is an exponent). If a future refactor moved the range check after the
+    call into bcrypt, this test would hang instead of failing fast - so the
+    timing assertion, not just pytest.raises, is the point of this test.
+    """
+    value = f"$2y${cost}$jBwKMP7r.vf4x1tbThl7Y.iBIgdDpv8WZ4DTgrnNIZdJS97NUorVe"
+    started = time.perf_counter()
+    with pytest.raises(ValueError, match=f"{nokia.MIN_COST}-{nokia.MAX_COST}"):
+        nokia.check(value, VECTOR_PASSWORD)
+    elapsed = time.perf_counter() - started
+    assert elapsed < 0.5
+
+
+def test_cost_out_of_range_error_names_the_accepted_range():
+    with pytest.raises(
+        ValueError, match=f"{nokia.MIN_COST}-{nokia.MAX_COST}"
+    ):
+        nokia.encrypt(VECTOR_PASSWORD, salt="$2y$99$jBwKMP7r.vf4x1tbThl7Y.")
