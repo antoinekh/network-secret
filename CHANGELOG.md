@@ -13,6 +13,8 @@ All notable changes to this project are documented here. This covers both the Py
 - All four are verified against Cisco's own published test vectors, in both the Python package and the website.
 - The website navigation is grouped by vendor. Each vendor opens a menu of its formats, so the bar stays readable now that it lists eleven entries.
 - Cisco type 6 follows Cisco's C reference, which encrypts and authenticates the secret's trailing NUL byte. The `encode6.py` script Cisco publishes beside it omits that byte, so it round-trips against itself but does not reproduce device output.
+- A header link to the source repository, beside the theme toggle.
+- The converter's Hash and Verify tabs for one-way formats, and the one-way badges on the catalogue card and the format page.
 
 ### Changed
 
@@ -24,6 +26,7 @@ All notable changes to this project are documented here. This covers both the Py
 - The `--list` vendor column was 8 characters wide, so `Juniper/HPE` overflowed it. It is now 12.
 - The website's Juniper/HPE `$9$` and `$8$` pages linked to the superseded `juniper9-crypt` and `juniper8-crypt` repositories. They now link to `network-secret`, and every format page carries the link.
 - The lockfile recorded a stale project version: v0.1.1 bumped `pyproject.toml` but `uv.lock` still read 0.1.0. Refreshed it to match.
+- The `--check` help text said "Decrypt and compare", which was wrong for a one-way hash; it now reads "Compare a value against a secret".
 
 ## v0.1.1 - 2026-07-23
 
