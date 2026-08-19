@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { b41Decode, b41Encode } from "./cisco-b41";
 
+const hex = (b: Uint8Array) =>
+  Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+
 describe("base41", () => {
   it("round-trips an odd-length input", () => {
     const data = new Uint8Array([1, 2, 3, 4, 5]);
@@ -19,8 +22,11 @@ describe("base41", () => {
 
   it("decodes the salt of Cisco's own vector", () => {
     // The first 12 symbols of the published type 6 vector carry the 8-byte salt.
-    const raw = b41Decode("NdUI^_YP[VEPG[MT_bfTEFNZYFCYe\\R\\M");
+    const vector = "NdUI^_YP[VEPG[MT_bfTEFNZYFCYe\\R\\M";
+    const raw = b41Decode(vector);
     expect(raw.length).toBe(21); // 8 salt + 9 ciphertext + 4 mac
+    expect(hex(raw.slice(0, 8))).toBe("5b0c394ba0198a98");
+    expect(b41Encode(raw)).toBe(vector);
   });
 
   it("rejects a length that is not a multiple of three", () => {

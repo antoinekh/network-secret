@@ -60,5 +60,5 @@ export function b41Decode(text: string): Uint8Array {
   }
   // The final group is the pad. A non-zero last byte marks the even-length
   // form, so drop both bytes; otherwise keep the carried byte.
-  return out.subarray(0, out.length - (out[out.length - 1] ? 2 : 1));
+  return out.slice(0, out.length - (out[out.length - 1] ? 2 : 1));
 }
