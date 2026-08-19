@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented here. This covers both the Python package and the website under `web/`. The website carries no version of its own: it deploys continuously to Cloudflare Pages on every push to `master`, so its changes are recorded under the package release they shipped alongside.
 
-## Unreleased
+## v0.2.0 - 2026-08-19
 
 ### Added
 
