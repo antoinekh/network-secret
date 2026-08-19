@@ -41,7 +41,7 @@ def _build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="cipher", metavar="CIPHER")
 
     for cipher in REGISTRY:
-        p = sub.add_parser(cipher.id, help=cipher.name)
+        p = sub.add_parser(cipher.id, help=cipher.name, description=cipher.name)
         if cipher.key_kind is KeyKind.MASTER_PASSWORD:
             p.add_argument(
                 "-m", "--master", metavar="MASTER",
