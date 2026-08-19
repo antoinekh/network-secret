@@ -68,3 +68,30 @@ def test_decrypt_always_raises_and_says_one_way():
 def test_check_rejects_malformed(value):
     with pytest.raises(ValueError):
         cisco_type8.check(value, "cisco123")
+
+
+@pytest.mark.parametrize(
+    "bad_salt,reason",
+    [
+        ("", "empty salt"),
+        ("salt$with$dollar", "contains $"),
+        ("salt with space", "contains space"),
+        ("café", "contains non-ASCII"),
+        ("salt\x00null", "contains non-printable"),
+        ("salt\x1fcontrol", "contains non-printable control character"),
+    ],
+)
+def test_encrypt_rejects_invalid_salt(bad_salt, reason):
+    """validate_salt rejects four conditions: empty, $, space, non-ASCII, non-printable."""
+    with pytest.raises(ValueError):
+        cisco_type8.encrypt("password", salt=bad_salt)
+
+
+def test_encrypt_accepts_valid_non_fourteen_character_salt():
+    """validate_salt deliberately does not check length; IOS devices may carry other lengths."""
+    short_salt = "abc"
+    long_salt = "abcdefghijklmnopqrstuvwxyz"
+    short_hash = cisco_type8.encrypt("password", salt=short_salt)
+    long_hash = cisco_type8.encrypt("password", salt=long_salt)
+    assert short_hash.startswith("$8$abc$")
+    assert long_hash.startswith(f"$8${long_salt}$")
