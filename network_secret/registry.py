@@ -19,6 +19,7 @@ from . import (
     juniper8,
     juniper9,
     nokia_sros_custom_hash,
+    nokia_sros_password,
 )
 from .types import Cipher, KeyKind
 
@@ -51,6 +52,15 @@ REGISTRY: list[Cipher] = [
         decrypt=nokia_sros_custom_hash.decrypt,
         check=nokia_sros_custom_hash.check,
         env_var=nokia_sros_custom_hash.ENV_KEY,
+    ),
+    Cipher(
+        id="nokia-sros-password",
+        vendor="Nokia",
+        name="Nokia SR OS password (one-way)",
+        key_kind=KeyKind.NONE,
+        encrypt=nokia_sros_password.encrypt,
+        decrypt=nokia_sros_password.decrypt,
+        check=nokia_sros_password.check,
     ),
     Cipher(
         id="cisco-type6",

@@ -1,6 +1,6 @@
 # Network Secret - website
 
-A static, **fully client-side** toolkit to decode, encode, hash and verify network device secret formats: Juniper/HPE `$9$`, `$8$`, Nokia SR OS `custom-hash`, and Cisco IOS type 6, 7, 8 and 9. Every byte of computation happens in your browser - nothing is ever sent to a server - so it deploys to any static host (built for **Cloudflare Pages**).
+A static, **fully client-side** toolkit to decode, encode, hash and verify network device secret formats: Juniper/HPE `$9$`, `$8$`, Nokia SR OS `custom-hash` and `$2y$` bcrypt passwords, and Cisco IOS type 6, 7, 8 and 9. Every byte of computation happens in your browser - nothing is ever sent to a server - so it deploys to any static host (built for **Cloudflare Pages**).
 
 Formats:
 
@@ -9,10 +9,11 @@ Formats:
 | 01 | `$9$`         | Juniper/HPE | reversible obfuscation                           | none             |
 | 02 | `$8$`         | Juniper/HPE | AES-256-GCM authenticated encryption             | master password  |
 | 03 | `custom-hash` | Nokia SR OS | AES-ECB + PKCS#7 (deterministic)                 | shared AES key   |
-| 04 | type 6        | Cisco IOS   | AES-128-CTR + HMAC-SHA1 (authenticated)          | master key       |
-| 05 | type 7        | Cisco IOS   | fixed-key XOR obfuscation (reversible)           | none             |
-| 06 | type 8        | Cisco IOS   | PBKDF2-HMAC-SHA256 (one-way hash)                | none (salted)    |
-| 07 | type 9        | Cisco IOS   | scrypt (one-way hash)                            | none (salted)    |
+| 04 | `$2y$`        | Nokia SR OS | bcrypt (one-way hash)                            | none (salted)    |
+| 05 | type 6        | Cisco IOS   | AES-128-CTR + HMAC-SHA1 (authenticated)          | master key       |
+| 06 | type 7        | Cisco IOS   | fixed-key XOR obfuscation (reversible)           | none             |
+| 07 | type 8        | Cisco IOS   | PBKDF2-HMAC-SHA256 (one-way hash)                | none (salted)    |
+| 08 | type 9        | Cisco IOS   | scrypt (one-way hash)                            | none (salted)    |
 
 One page per format. Adding a converter is one module (see [Adding a converter](#adding-a-converter)).
 
@@ -27,7 +28,7 @@ There are also three **explainer pages** for the Nokia hash family (documentatio
 - **Svelte 5 + Vite + TypeScript**, no UI framework runtime beyond Svelte.
 - **Vitest** for the crypto unit tests.
 - Fonts (**Hanken Grotesk**, **JetBrains Mono**) are self-hosted via `@fontsource` - no external CDN.
-- `$8$` uses the browser-native **Web Crypto API** (PBKDF2 + AES-256-GCM). `$9$` is a pure-TS port of the public algorithm. Nokia `custom-hash` uses AES-ECB, which Web Crypto deliberately omits, so it uses the small pure-JS **`aes-js`** library (bundled locally, no CDN). Cisco type 6 combines `aes-js`, Web Crypto's HMAC-SHA1, and a local MD5 (`src/lib/md5.ts`, also absent from Web Crypto). Cisco type 8 uses Web Crypto PBKDF2; type 9 uses the pure-JS **`scrypt-js`**, since Web Crypto has no scrypt.
+- `$8$` uses the browser-native **Web Crypto API** (PBKDF2 + AES-256-GCM). `$9$` is a pure-TS port of the public algorithm. Nokia `custom-hash` uses AES-ECB, which Web Crypto deliberately omits, so it uses the small pure-JS **`aes-js`** library (bundled locally, no CDN). Nokia `$2y$` uses the pure-JS **`bcryptjs`**, since Web Crypto has no bcrypt. Cisco type 6 combines `aes-js`, Web Crypto's HMAC-SHA1, and a local MD5 (`src/lib/md5.ts`, also absent from Web Crypto). Cisco type 8 uses Web Crypto PBKDF2; type 9 uses the pure-JS **`scrypt-js`**, since Web Crypto has no scrypt.
 
 ## Develop
 
@@ -54,15 +55,16 @@ src/
     cisco-b64.ts           # Cisco's base64 variant shared by the type 8/type 9 hash digest
     cisco-hash.ts          # shared PBKDF2/scrypt hash+verify plumbing (type 8, type 9)
     ciphers/
-      types.ts             # Cipher + Explainer contracts, catalogue types
-      juniper9.ts          # $9$  (pure TS)               + tests
-      juniper8.ts          # $8$  (Web Crypto)            + tests
-      nokia-custom-hash.ts # custom-hash (aes-js, ECB)    + tests
-      cisco-type6.ts       # type 6 (aes-js, HMAC-SHA1)   + tests
-      cisco-type7.ts       # type 7 (fixed-key XOR)       + tests
-      cisco-type8.ts       # type 8 (Web Crypto PBKDF2)   + tests
-      cisco-type9.ts       # type 9 (scrypt-js)           + tests
-      registry.ts          # assembles the catalogue (converters + explainers)
+      types.ts               # Cipher + Explainer contracts, catalogue types
+      juniper9.ts            # $9$  (pure TS)               + tests
+      juniper8.ts            # $8$  (Web Crypto)            + tests
+      nokia-custom-hash.ts   # custom-hash (aes-js, ECB)    + tests
+      nokia-sros-password.ts # $2y$ (bcryptjs)              + tests
+      cisco-type6.ts         # type 6 (aes-js, HMAC-SHA1)   + tests
+      cisco-type7.ts         # type 7 (fixed-key XOR)       + tests
+      cisco-type8.ts         # type 8 (Web Crypto PBKDF2)   + tests
+      cisco-type9.ts         # type 9 (scrypt-js)           + tests
+      registry.ts            # assembles the catalogue (converters + explainers)
   components/
     Home.svelte            # hero + catalogue, generated from the catalogue
     CipherPage.svelte      # generic per-converter page (converter + notes)

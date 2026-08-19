@@ -84,13 +84,14 @@ def test_check_output_format(capsys):
     assert "Match     : YES" in out
 
 
-def test_list_shows_all_seven(capsys):
+def test_list_shows_all_eight(capsys):
     assert main(["--list"]) == 0
     out = capsys.readouterr().out
     for cipher_id in (
         "juniper9",
         "juniper8",
         "nokia-sros-custom-hash",
+        "nokia-sros-password",
         "cisco-type6",
         "cisco-type7",
         "cisco-type8",
