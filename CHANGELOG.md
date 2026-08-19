@@ -10,6 +10,10 @@ All notable changes to this project are documented here. This covers both the Py
 - The website's Nokia SR OS password converter, with Hash and Verify tabs and a one-way badge, next to the existing Nokia custom-hash converter.
 - New dependencies: `bcrypt>=4.0` (Python package) and `bcryptjs` (website).
 
+### Security
+
+- Updated `postcss` to 8.5.26 and `nanoid` to 3.3.18 in the website's lockfile, clearing two high-severity advisories. Both are transitive dependencies of `vite`, which is a devDependency, so they only ever ran on the build machine and were never shipped to the browser. The change is lockfile-only: no direct dependency was added, removed, or had its version range altered.
+
 ## v0.2.0 - 2026-08-19
 
 ### Added
