@@ -29,7 +29,11 @@ describe("vendorGroups", () => {
       "Nokia SR OS",
       "Cisco IOS",
     ]);
-    expect(groups[0].entries.map((e) => e.id)).toEqual(["juniper9", "juniper8"]);
+    expect(groups[0].entries.map((e) => e.id)).toEqual([
+      "juniper9",
+      "juniper8",
+      "juniper-encrypted-password",
+    ]);
     expect(groups[1].entries.map((e) => e.id)).toEqual([
       "nokia-custom-hash",
       "nokia-sros-password",
