@@ -4,6 +4,12 @@ All notable changes to this project are documented here. This covers both the Py
 
 ## Unreleased
 
+### Added
+
+- Nokia SR OS password (`network_secret.nokia_sros_password`, `nokia-sros-password`): a one-way bcrypt hash for local user passwords, written in config as `$2y$10$<22-char salt><31-char digest>`. Verifies `$2a$`, `$2b$` and `$2y$` hashes alike, since they are the same algorithm under different historical tags, and always hashes to `$2y$`, matching what SR OS itself writes. The bcrypt cost read from a hash is bounded to 4-16, mirroring how `juniper8` bounds its iteration count.
+- The website's Nokia SR OS password converter, with Hash and Verify tabs and a one-way badge, next to the existing Nokia custom-hash converter.
+- New dependencies: `bcrypt>=4.0` (Python package) and `bcryptjs` (website).
+
 ## v0.2.0 - 2026-08-19
 
 ### Added

@@ -5,9 +5,9 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/network-secret)](https://pypi.org/project/network-secret/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Encode, decode, and check network device secrets for Juniper/HPE JunOS, Nokia SR OS, and Cisco IOS, from the command line or Python. `network-secret` is a unified successor to `juniper8-crypt` and `juniper9-crypt`: it covers all seven formats in a single package with a single CLI.
+Encode, decode, and check network device secrets for Juniper/HPE JunOS, Nokia SR OS, and Cisco IOS, from the command line or Python. `network-secret` is a unified successor to `juniper8-crypt` and `juniper9-crypt`: it covers all eight formats in a single package with a single CLI.
 
-> **Prefer a browser?** Decode, encode, hash and verify all seven formats at **[network-secret.pages.dev](https://network-secret.pages.dev/)**. It runs the same algorithms fully client-side - nothing you type is ever sent to a server.
+> **Prefer a browser?** Decode, encode, hash and verify all eight formats at **[network-secret.pages.dev](https://network-secret.pages.dev/)**. It runs the same algorithms fully client-side - nothing you type is ever sent to a server.
 
 ## Repository layout
 
@@ -28,6 +28,7 @@ The two implementations share known-answer vectors, so keeping them in one repo 
 | `$9$` | `juniper9` | `network_secret.juniper9` | Juniper/HPE reversible obfuscation - keyless |
 | `$8$` | `juniper8` | `network_secret.juniper8` | Juniper/HPE AES-256-GCM - keyed by master password |
 | Nokia custom-hash | `nokia-sros-custom-hash` | `network_secret.nokia_sros_custom_hash` | Nokia SR OS AES-ECB shared-key cipher |
+| `$2y$` | `nokia-sros-password` | `network_secret.nokia_sros_password` | Nokia SR OS bcrypt local user password hash - one-way |
 | Type 6 | `cisco-type6` | `network_secret.cisco_type6` | Cisco IOS reversible AES + HMAC - keyed by the master key |
 | Type 7 | `cisco-type7` | `network_secret.cisco_type7` | Cisco IOS legacy XOR obfuscation - keyless |
 | `$8$` | `cisco-type8` | `network_secret.cisco_type8` | Cisco IOS PBKDF2-SHA256 password hash - one-way |
@@ -93,7 +94,7 @@ cisco_type8.decrypt(hash8)
 # ValueError: Cisco type 8 is a one-way hash and cannot be decrypted. Use --check to test a password against it.
 ```
 
-All seven `check()` functions return a `tuple[str, str, bool]`. For five of them the two strings are the decrypted plaintexts and whether they match. Cisco type 8 and type 9 cannot decrypt anything, so they return the hash you passed in, the hash recomputed from the candidate password, and whether those match. For Cisco type 6 and type 7, the second argument to `check()` is always read as cleartext, because neither format carries a marker that tells it apart from a password.
+All eight `check()` functions return a `tuple[str, str, bool]`. For five of them the two strings are the decrypted plaintexts and whether they match. Nokia SR OS password, Cisco type 8 and Cisco type 9 cannot decrypt anything, so they return the hash you passed in, the hash recomputed from the candidate password, and whether those match. For Cisco type 6 and type 7, the second argument to `check()` is always read as cleartext, because neither format carries a marker that tells it apart from a password.
 
 ## Command-line usage
 
@@ -148,6 +149,20 @@ network-secret nokia-sros-custom-hash -k 'a3f8d9e112c04b7af1c3e8b92d057a4e' --ch
 export SROS_CUSTOM_HASH_KEY='a3f8d9e112c04b7af1c3e8b92d057a4e'
 network-secret nokia-sros-custom-hash --decrypt 'ABC123...'
 ```
+
+### Nokia SR OS password (bcrypt, one-way)
+
+SR OS stores local user passwords as bcrypt, written in config as `$2y$10$<22-char salt><31-char digest>`. There is nothing to decrypt, so `--encrypt` hashes with a fresh random salt and `--check` verifies a candidate password against an existing hash by reusing that hash's salt.
+
+```bash
+network-secret nokia-sros-password --encrypt 'lab123'
+network-secret nokia-sros-password --check '$2y$10$jBwKMP7r.vf4x1tbThl7Y.iBIgdDpv8WZ4DTgrnNIZdJS97NUorVe' 'lab123'
+
+network-secret nokia-sros-password --decrypt '$2y$10$jBwKMP7r.vf4x1tbThl7Y.iBIgdDpv8WZ4DTgrnNIZdJS97NUorVe'
+# error: Nokia SR OS passwords are bcrypt hashes and cannot be decrypted. Use --check to test a password against one.
+```
+
+`$2a$`, `$2b$` and `$2y$` are the same bcrypt algorithm under different historical tags, so `--check` accepts a hash carrying any of the three; `--encrypt` always emits `$2y$`, which is what SR OS itself writes.
 
 ### Cisco IOS type 6 (master-key keyed)
 
