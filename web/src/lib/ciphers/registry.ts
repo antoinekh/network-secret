@@ -16,9 +16,19 @@ import { juniper8 } from "./juniper8";
 import { nokiaCustomHash } from "./nokia-custom-hash";
 import { ciscoType6 } from "./cisco-type6";
 import { ciscoType7 } from "./cisco-type7";
+import { ciscoType8 } from "./cisco-type8";
+import { ciscoType9 } from "./cisco-type9";
 import { explainers } from "../explainers";
 
-const ciphers = [juniper9, juniper8, nokiaCustomHash, ciscoType6, ciscoType7];
+const ciphers = [
+  juniper9,
+  juniper8,
+  nokiaCustomHash,
+  ciscoType6,
+  ciscoType7,
+  ciscoType8,
+  ciscoType9,
+];
 
 export const catalogue: CatalogueEntry[] = [
   ...ciphers.map((c) => ({ ...c, kind: "converter" as const })),

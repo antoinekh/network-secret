@@ -48,6 +48,11 @@ export interface CipherInfo {
   keyed: boolean;
   /** Label for the key field, when keyed. */
   keyLabel?: string;
+  /**
+   * One-way hash. The converter offers Hash and Verify instead of Encode and
+   * Decode, because there is nothing to decode.
+   */
+  oneWay?: boolean;
   /** "available" formats are interactive; "planned" render as a teaser. */
   status: CipherStatus;
   /** Short explanatory bullets shown on the format page. */
@@ -63,6 +68,14 @@ export interface Cipher extends CipherInfo {
   encode(plaintext: string, key?: string): Promise<string>;
   /** Decode an encoded string back to cleartext. */
   decode(encoded: string, key?: string): Promise<string>;
+  /**
+   * One-way formats only: true when `plaintext` hashes to `encoded`.
+   *
+   * `encode` cannot serve here. It draws a fresh random salt, so it never
+   * reproduces a given hash. Verification reuses the salt carried inside
+   * `encoded`.
+   */
+  verify?(encoded: string, plaintext: string): Promise<boolean>;
 }
 
 /** A badge shown in an explainer's header. */
