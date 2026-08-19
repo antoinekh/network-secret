@@ -30,6 +30,9 @@ const MAC_LEN = 4;
 const BLOCK = 16;
 const COUNTER_BYTE = 3;
 const MIN_RAW_LEN = SALT_LEN + 1 + MAC_LEN;
+// The keystream counter is one byte, so the stream tops out at 256 blocks. One
+// byte of the payload is the NUL terminator, so the plaintext gets one less.
+const MAX_PLAINTEXT_LEN = 256 * BLOCK - 1;
 
 /**
  * Cast a Uint8Array to BufferSource. TypeScript's DOM lib (>=5.7) narrows
@@ -93,6 +96,11 @@ function equal(a: Uint8Array, b: Uint8Array): boolean {
 async function encode(plaintext: string, key?: string): Promise<string> {
   if (!key) throw new Error("A master key is required");
   const body = new TextEncoder().encode(plaintext);
+  if (body.length > MAX_PLAINTEXT_LEN) {
+    throw new Error(
+      `Plaintext is too long for type 6: at most ${MAX_PLAINTEXT_LEN} bytes`,
+    );
+  }
   // The trailing NUL is part of the encrypted and authenticated data.
   const data = new Uint8Array(body.length + 1);
   data.set(body);

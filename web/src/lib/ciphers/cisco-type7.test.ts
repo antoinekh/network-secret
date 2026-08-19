@@ -25,4 +25,8 @@ describe("cisco type 7", () => {
       await expect(ciscoType7.decode(value)).rejects.toThrow();
     },
   );
+
+  it("rejects a non-Latin-1 plaintext", async () => {
+    await expect(ciscoType7.encode("secret€")).rejects.toThrow();
+  });
 });

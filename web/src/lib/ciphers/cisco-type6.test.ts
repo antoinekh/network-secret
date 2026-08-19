@@ -50,4 +50,27 @@ describe("cisco type 6", () => {
     const encoded = await ciscoType6.encode("a\x00b", "MyMaster");
     expect(await ciscoType6.decode(encoded, "MyMaster")).toBe("a\x00b");
   });
+
+  it("accepts the longest valid plaintext", async () => {
+    // 4095 bytes plus the NUL terminator is exactly 256 blocks, the most the
+    // one-byte keystream counter can address.
+    const plain = "x".repeat(4095);
+    const encoded = await ciscoType6.encode(plain, "MyMaster");
+    expect(await ciscoType6.decode(encoded, "MyMaster")).toBe(plain);
+  });
+
+  it("rejects a plaintext one byte over the limit", async () => {
+    await expect(
+      ciscoType6.encode("x".repeat(4096), "MyMaster"),
+    ).rejects.toThrow(/too long/);
+  });
+
+  it("measures the limit in UTF-8 bytes, not characters", async () => {
+    // 2048 two-byte characters is 4096 encoded bytes, one over the limit,
+    // even though .length reports only 2048.
+    const plain = "é".repeat(2048);
+    await expect(ciscoType6.encode(plain, "MyMaster")).rejects.toThrow(
+      /too long/,
+    );
+  });
 });
