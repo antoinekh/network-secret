@@ -51,6 +51,7 @@ src/
     explainers.ts          # documentation-only entries (metadata + prose component)
     md5.ts                 # local MD5 (Cisco type 6 subkeys; absent from Web Crypto)
     cisco-b41.ts           # base41 armouring shared by Cisco type 6
+    cisco-b64.ts           # Cisco's base64 variant shared by the type 8/type 9 hash digest
     cisco-hash.ts          # shared PBKDF2/scrypt hash+verify plumbing (type 8, type 9)
     ciphers/
       types.ts             # Cipher + Explainer contracts, catalogue types
@@ -80,7 +81,7 @@ The catalogue holds two kinds of entry: **converters** (interactive `Cipher` mod
 3. Add `src/lib/ciphers/<id>.test.ts` with known-answer vectors and a round-trip test.
 4. For a one-way hash, set `oneWay: true` and implement `verify(encoded, plaintext)` alongside `encode`; `decode` must still exist and must throw. `Converter` then shows Hash and Verify tabs instead of Decode and Encode.
 
-The home card, the `/<id>` page, and the header tab all appear automatically. An entry can also be marked `status: "planned"` to show as a teaser before its `encode`/`decode` are implemented.
+The home card, the `/<id>` page, and the header's vendor menu entry all appear automatically. An entry can also be marked `status: "planned"` to show as a teaser before its `encode`/`decode` are implemented.
 
 ### Adding an explainer
 
