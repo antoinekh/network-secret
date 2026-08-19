@@ -82,3 +82,75 @@ def test_check_output_format(capsys):
     assert "Value 1   : 'hunter2'" in out
     assert "Value 2   : 'hunter2'" in out
     assert "Match     : YES" in out
+
+
+import pytest
+
+from network_secret.cli import main
+
+
+def test_list_shows_all_seven(capsys):
+    assert main(["--list"]) == 0
+    out = capsys.readouterr().out
+    for cipher_id in (
+        "juniper9",
+        "juniper8",
+        "nokia-sros-custom-hash",
+        "cisco-type6",
+        "cisco-type7",
+        "cisco-type8",
+        "cisco-type9",
+    ):
+        assert cipher_id in out
+
+
+def test_type7_round_trip_through_the_cli(capsys):
+    assert main(["cisco-type7", "--decrypt", "060506324F41"]) == 0
+    assert capsys.readouterr().out.strip() == "cisco"
+
+
+def test_type6_reads_its_own_env_var(monkeypatch, capsys):
+    monkeypatch.setenv("CISCO_MASTER_KEY", "cisco123")
+    monkeypatch.delenv("JUNOS_MASTER_PASSWORD", raising=False)
+    assert main(["cisco-type6", "--decrypt", "NdUI^_YP[VEPG[MT_bfTEFNZYFCYe\\R\\M"]) == 0
+    assert capsys.readouterr().out.strip() == "password"
+
+
+def test_type6_ignores_the_juniper_env_var(monkeypatch):
+    """Regression guard: env vars were once mapped by KeyKind, not by cipher."""
+    monkeypatch.delenv("CISCO_MASTER_KEY", raising=False)
+    monkeypatch.setenv("JUNOS_MASTER_PASSWORD", "cisco123")
+    monkeypatch.setattr(
+        "network_secret.cli.getpass.getpass", lambda prompt="": "wrong-key"
+    )
+    assert main(["cisco-type6", "--decrypt", "NdUI^_YP[VEPG[MT_bfTEFNZYFCYe\\R\\M"]) == 2
+
+
+def test_type8_check_matches(capsys):
+    code = main(
+        [
+            "cisco-type8",
+            "--check",
+            "$8$J5J/1K3e8gk974$HRezVpnMZOhOU2uxFTv.79S1U1PpMScizwXS3Z1Dx1s",
+            "cisco123",
+        ]
+    )
+    assert code == 0
+    assert "YES" in capsys.readouterr().out
+
+
+def test_type8_check_mismatches():
+    code = main(
+        [
+            "cisco-type8",
+            "--check",
+            "$8$J5J/1K3e8gk974$HRezVpnMZOhOU2uxFTv.79S1U1PpMScizwXS3Z1Dx1s",
+            "wrong",
+        ]
+    )
+    assert code == 1
+
+
+def test_type9_decrypt_reports_one_way(capsys):
+    assert main(["cisco-type9", "--decrypt", "$9$abc$def"]) == 2
+    assert "one-way" in capsys.readouterr().err

@@ -12,7 +12,6 @@ import getpass
 import os
 import sys
 
-from . import juniper8, nokia_sros_custom_hash
 from .registry import REGISTRY, find
 from .types import Cipher, KeyKind
 
@@ -21,10 +20,6 @@ __all__ = ["main"]
 _PROMPTS = {
     KeyKind.MASTER_PASSWORD: "Master password: ",
     KeyKind.SHARED_KEY: "Shared key: ",
-}
-_ENV_VARS = {
-    KeyKind.MASTER_PASSWORD: juniper8.ENV_MASTER,
-    KeyKind.SHARED_KEY: nokia_sros_custom_hash.ENV_KEY,
 }
 
 
@@ -51,8 +46,9 @@ def _build_parser() -> argparse.ArgumentParser:
             p.add_argument(
                 "-m", "--master", metavar="MASTER",
                 help=(
-                    "Master password used to derive the key. If omitted, read "
-                    f"from {juniper8.ENV_MASTER} or prompted for without echo."
+                    "Master password or key used to derive the key. If "
+                    f"omitted, read from {cipher.env_var} or prompted for "
+                    "without echo."
                 ),
             )
         elif cipher.key_kind is KeyKind.SHARED_KEY:
@@ -60,27 +56,28 @@ def _build_parser() -> argparse.ArgumentParser:
                 "-k", "--key", metavar="KEY",
                 help=(
                     "Shared AES key (16/24/32 chars). If omitted, read from "
-                    f"{nokia_sros_custom_hash.ENV_KEY} or prompted for without echo."
+                    f"{cipher.env_var} or prompted for without echo."
                 ),
             )
         group = p.add_mutually_exclusive_group(required=True)
         group.add_argument("--encrypt", metavar="PLAINTEXT", help="Encrypt a plaintext value")
         group.add_argument("--decrypt", metavar="CIPHERTEXT", help="Decrypt a secret value")
         group.add_argument(
-            "--check", nargs=2, metavar=("CIPHERTEXT", "VALUE"),
-            help="Decrypt and compare. Exit 0 on match, 1 on mismatch.",
+            "--check", nargs=2, metavar=("SECRET", "VALUE"),
+            help="Compare a value against a secret. Exit 0 on match, 1 on mismatch.",
         )
     return parser
 
 
 def _resolve_key(cipher: Cipher, args: argparse.Namespace) -> str:
-    """Resolve a key: explicit flag, then env var, then no-echo prompt."""
+    """Resolve a key: explicit flag, then the cipher's env var, then a prompt."""
     flag = args.master if cipher.key_kind is KeyKind.MASTER_PASSWORD else args.key
     if flag is not None:
         return flag
-    env = os.environ.get(_ENV_VARS[cipher.key_kind])
-    if env is not None:
-        return env
+    if cipher.env_var is not None:
+        env = os.environ.get(cipher.env_var)
+        if env is not None:
+            return env
     return getpass.getpass(_PROMPTS[cipher.key_kind])
 
 
@@ -96,7 +93,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.list:
         for c in REGISTRY:
-            print(f"{c.id:24} {c.vendor:8} {c.name}")
+            print(f"{c.id:24} {c.vendor:12} {c.name}")
         return 0
 
     if args.cipher is None:

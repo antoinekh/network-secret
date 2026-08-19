@@ -18,3 +18,17 @@ def test_modules_exposed():
 
 def test_version_is_string():
     assert isinstance(network_secret.__version__, str)
+
+
+def test_cisco_modules_are_exported():
+    import network_secret
+
+    for name in ("cisco_type6", "cisco_type7", "cisco_type8", "cisco_type9"):
+        assert name in network_secret.__all__
+        assert hasattr(network_secret, name)
+
+
+def test_internal_hash_module_is_not_exported():
+    import network_secret
+
+    assert "_cisco_hash" not in network_secret.__all__
