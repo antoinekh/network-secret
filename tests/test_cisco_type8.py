@@ -82,7 +82,7 @@ def test_check_rejects_malformed(value):
     ],
 )
 def test_encrypt_rejects_invalid_salt(bad_salt, reason):
-    """validate_salt rejects four conditions: empty, $, space, non-ASCII, non-printable."""
+    """validate_salt rejects five conditions: empty, $, space, non-ASCII, non-printable."""
     with pytest.raises(ValueError):
         cisco_type8.encrypt("password", salt=bad_salt)
 

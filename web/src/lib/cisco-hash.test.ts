@@ -21,7 +21,7 @@ describe("cisco hash framing", () => {
     expect(() => parseHash("$9$abc$def", 8)).toThrow();
   });
 
-  // validateSalt rejects four conditions: empty, '$', space, non-ASCII, and
+  // validateSalt rejects five conditions: empty, '$', space, non-ASCII, and
   // non-printable. The '$' and space cases are covered above; a '$' embedded
   // in a full hash string would trip parseHash's field-count check first, so
   // these go straight at validateSalt to pin each branch individually.
