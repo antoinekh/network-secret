@@ -15,7 +15,7 @@ All notable changes to this project are documented here. This covers both the Py
 
 ### Security
 
-- Updated `postcss` to 8.5.26 and `nanoid` to 3.3.18 in the website's lockfile, clearing two high-severity advisories. Both are transitive dependencies of `vite`, which is a devDependency, so they only ever ran on the build machine and were never shipped to the browser. The change is lockfile-only: no direct dependency was added, removed, or had its version range altered.
+- Updated `postcss` to 8.5.26 and `nanoid` to 3.3.18, clearing two high-severity advisories in build-only transitive dependencies of `vite`.
 
 ## v0.2.0 - 2026-08-19
 
