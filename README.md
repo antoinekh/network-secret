@@ -7,7 +7,7 @@
 
 Encode, decode, and check network device secrets for Juniper/HPE JunOS, Nokia SR OS, and Cisco IOS, from the command line or Python. `network-secret` is a unified successor to `juniper8-crypt` and `juniper9-crypt`: it covers all seven formats in a single package with a single CLI.
 
-> **Prefer a browser?** Encode and decode all seven formats at **[network-secret.pages.dev](https://network-secret.pages.dev/)**. It runs the same algorithms fully client-side - nothing you type is ever sent to a server.
+> **Prefer a browser?** Decode, encode, hash and verify all seven formats at **[network-secret.pages.dev](https://network-secret.pages.dev/)**. It runs the same algorithms fully client-side - nothing you type is ever sent to a server.
 
 ## Repository layout
 
@@ -93,7 +93,7 @@ cisco_type8.decrypt(hash8)
 # ValueError: Cisco type 8 is a one-way hash and cannot be decrypted. Use --check to test a password against it.
 ```
 
-Five of the seven `check()` functions return a `tuple[str, str, bool]`: the two decrypted plaintexts and whether they match. Cisco type 8 and type 9 cannot decrypt anything, so they return the hash you passed in, the hash recomputed from the candidate password, and whether those match. For Cisco type 6 and type 7, the second argument to `check()` is always read as cleartext, because neither format carries a marker that tells it apart from a password.
+All seven `check()` functions return a `tuple[str, str, bool]`. For five of them the two strings are the decrypted plaintexts and whether they match. Cisco type 8 and type 9 cannot decrypt anything, so they return the hash you passed in, the hash recomputed from the candidate password, and whether those match. For Cisco type 6 and type 7, the second argument to `check()` is always read as cleartext, because neither format carries a marker that tells it apart from a password.
 
 ## Command-line usage
 
