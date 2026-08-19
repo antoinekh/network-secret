@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { b41Decode, b41Encode } from "../cisco-b41";
 import { ciscoType6 } from "./cisco-type6";
+
+// Length of the trailing MAC in a decoded type 6 value; see cisco-type6.ts.
+const MAC_LEN = 4;
 
 const VECTOR = "NdUI^_YP[VEPG[MT_bfTEFNZYFCYe\\R\\M";
 const DEVICE_VALUE = "fe_a`iJYE\\DZYJhDhTP[`MYaTgRH_MAAB";
@@ -72,5 +76,17 @@ describe("cisco type 6", () => {
     await expect(ciscoType6.encode(plain, "MyMaster")).rejects.toThrow(
       /too long/,
     );
+  });
+
+  it("rejects a body the one-byte keystream counter cannot address, not with an internal error", async () => {
+    const value = await ciscoType6.encode("x".repeat(4095), "MyMaster");
+    const raw = b41Decode(value);
+    const oversized = new Uint8Array(raw.length + 1);
+    oversized.set(raw.subarray(0, raw.length - MAC_LEN));
+    oversized[raw.length - MAC_LEN] = 0;
+    oversized.set(raw.subarray(raw.length - MAC_LEN), raw.length - MAC_LEN + 1);
+    await expect(
+      ciscoType6.decode(b41Encode(oversized), "MyMaster"),
+    ).rejects.toThrow(/too long/);
   });
 });

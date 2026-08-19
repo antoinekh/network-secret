@@ -114,3 +114,18 @@ def test_encrypt_accepts_the_longest_valid_plaintext():
 def test_encrypt_rejects_an_oversized_plaintext():
     with pytest.raises(ValueError, match="too long"):
         cisco_type6.encrypt("x" * (cisco_type6.MAX_PLAINTEXT_LEN + 1), VECTOR_MASTER)
+
+
+def test_decrypt_rejects_an_oversized_body():
+    """A body the one-byte keystream counter cannot address must raise the
+    module's own error, not an internal error from the keystream or a
+    truncated counter that repeats the keystream.
+    """
+    value = cisco_type6.encrypt("x" * cisco_type6.MAX_PLAINTEXT_LEN, VECTOR_MASTER)
+    raw = cisco_type6._b41_decode(value)
+    salt = raw[: cisco_type6.SALT_LEN]
+    body = raw[cisco_type6.SALT_LEN : -cisco_type6.MAC_LEN]
+    mac = raw[-cisco_type6.MAC_LEN :]
+    oversized = cisco_type6._b41_encode(salt + body + b"\x00" + mac)
+    with pytest.raises(ValueError, match="too long"):
+        cisco_type6.decrypt(oversized, VECTOR_MASTER)

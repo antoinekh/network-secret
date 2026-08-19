@@ -170,6 +170,11 @@ def decrypt(ciphertext: str, master_key: str) -> str:
         raise ValueError(
             "Malformed type 6 value: too short to hold a salt, a secret and a MAC"
         )
+    if len(raw) - SALT_LEN - MAC_LEN > MAX_PLAINTEXT_LEN + 1:
+        raise ValueError(
+            f"Type 6 value is too long: the secret exceeds {MAX_PLAINTEXT_LEN} bytes, "
+            "which the one-byte keystream counter cannot address"
+        )
     salt, body, mac = raw[:SALT_LEN], raw[SALT_LEN:-MAC_LEN], raw[-MAC_LEN:]
     ke, ka = _subkeys(master_key, salt)
     if not hmac.compare_digest(_mac(ka, body), mac):

@@ -123,6 +123,12 @@ async function decode(encoded: string, key?: string): Promise<string> {
       "Malformed type 6 value: too short to hold a salt, a secret and a MAC",
     );
   }
+  if (raw.length - SALT_LEN - MAC_LEN > MAX_PLAINTEXT_LEN + 1) {
+    throw new Error(
+      `Type 6 value is too long: the secret exceeds ${MAX_PLAINTEXT_LEN} bytes, ` +
+        "which the one-byte keystream counter cannot address",
+    );
+  }
   const salt = raw.subarray(0, SALT_LEN);
   const ciphertext = raw.subarray(SALT_LEN, raw.length - MAC_LEN);
   const tag = raw.subarray(raw.length - MAC_LEN);
