@@ -29,6 +29,14 @@
     </a>
     <div class="top-right">
       <span class="meta mono">Runs locally · no backend</span>
+      <a
+        class="repo mono"
+        href="https://github.com/antoinekh/network-secret"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Source code on GitHub (opens in a new tab)"
+        ><span class="repo-label">Source</span> <span aria-hidden="true">↗</span></a
+      >
       <button
         class="theme mono"
         onclick={toggleTheme}
@@ -148,7 +156,8 @@
     text-transform: uppercase;
     color: var(--accent);
   }
-  .theme {
+  .theme,
+  .repo {
     background: var(--paper-2);
     border: 1px solid var(--line-2);
     border-radius: 999px;
@@ -163,10 +172,15 @@
       border-color 0.15s ease,
       transform 0.15s ease;
   }
-  .theme:hover {
+  .theme:hover,
+  .repo:hover {
     color: var(--accent);
     border-color: var(--accent);
     transform: translateY(-1px);
+  }
+  .repo {
+    display: inline-flex;
+    align-items: center;
   }
   .nav-wrap {
     padding-bottom: 0.4rem;
@@ -264,6 +278,9 @@
   }
   @media (max-width: 560px) {
     .meta {
+      display: none;
+    }
+    .repo-label {
       display: none;
     }
   }
