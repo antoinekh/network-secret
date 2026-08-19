@@ -51,7 +51,7 @@ uv add network-secret
 ## Python API
 
 ```python
-from network_secret import juniper8, juniper9, nokia_sros_custom_hash
+from network_secret import juniper8, juniper9, nokia_sros_custom_hash, nokia_sros_password
 
 # Juniper/HPE $9$ (keyless)
 cipher9 = juniper9.encrypt("BGPsecret1")
@@ -73,6 +73,16 @@ plain_nokia = nokia_sros_custom_hash.decrypt(cipher_nokia, key)
 # 'BGPsecret1'
 plain_a, plain_b, match = nokia_sros_custom_hash.check(cipher_nokia, "BGPsecret1", key)
 # match is True
+
+# Nokia SR OS password (bcrypt, one-way)
+hash_nokia_pw = nokia_sros_password.encrypt("lab123")
+# '$2y$10$.R0.1VcFPQhlLvMXR32acet62eX19GfoBlMYJo7ae.y8ijmg3cAa6' (a fresh salt every call, always starting '$2y$')
+given, recomputed, match = nokia_sros_password.check("$2y$10$jBwKMP7r.vf4x1tbThl7Y.iBIgdDpv8WZ4DTgrnNIZdJS97NUorVe", "lab123")
+# match is True
+given, recomputed, match = nokia_sros_password.check("$2b$10$jBwKMP7r.vf4x1tbThl7Y.iBIgdDpv8WZ4DTgrnNIZdJS97NUorVe", "lab123")
+# match is True too: "$2a$", "$2b$" and "$2y$" are the same algorithm, only the tag differs
+nokia_sros_password.decrypt(hash_nokia_pw)
+# ValueError: Nokia SR OS passwords are bcrypt hashes and cannot be decrypted. Use --check to test a password against one.
 
 # Cisco IOS type 7 (keyless, legacy obfuscation)
 from network_secret import cisco_type6, cisco_type7, cisco_type8, cisco_type9
