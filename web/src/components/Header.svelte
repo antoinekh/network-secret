@@ -201,9 +201,6 @@
     gap: 0.4rem;
     flex-wrap: wrap;
   }
-  .nav::-webkit-scrollbar {
-    display: none;
-  }
   .group {
     position: relative;
     flex: 0 0 auto;
