@@ -232,6 +232,19 @@
     border-radius: var(--radius-sm);
     box-shadow: var(--shadow-md);
   }
+  /* The menu sits 0.35rem below its trigger. That strip belongs to neither
+     the trigger nor the menu, so a pointer crossing it would leave .group and
+     close the menu before an item could be reached. This invisible bridge
+     makes the path contiguous. Keep its height equal to the offset in `top`
+     above. */
+  .menu::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -0.35rem;
+    height: 0.35rem;
+  }
   .item {
     display: flex;
     align-items: center;

@@ -28,6 +28,7 @@ All notable changes to this project are documented here. This covers both the Py
 - The lockfile recorded a stale project version: v0.1.1 bumped `pyproject.toml` but `uv.lock` still read 0.1.0. Refreshed it to match.
 - The `--check` help text said "Decrypt and compare", which was wrong for a one-way hash; it now reads "Compare a value against a secret".
 - The environment-variable constants (`ENV_MASTER`, `ENV_KEY`, `ENV_MASTER_KEY`) are now exported consistently from `__all__` in all three keyed modules (`juniper8`, `nokia_sros_custom_hash`, `cisco_type6`), instead of only the last one.
+- On a narrow screen, hovering a vendor name in the site nav opened its menu, but moving the pointer down toward an item closed it again before it could be clicked. The gap between the trigger and the menu is now bridged so the pointer never leaves the hoverable area.
 
 ## v0.1.1 - 2026-07-23
 
