@@ -71,7 +71,6 @@
           <button
             class="tab"
             class:active={groupIsActive(group.vendor)}
-            aria-haspopup="true"
             aria-expanded={open === group.vendor}
             bind:this={triggers[group.vendor]}
             onclick={(e) => {
