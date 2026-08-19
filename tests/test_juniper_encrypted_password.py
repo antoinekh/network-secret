@@ -10,6 +10,19 @@ import pytest
 
 from network_secret import juniper_encrypted_password as jep
 
+_HAVE_OPENSSL = shutil.which("openssl") is not None
+
+
+def _openssl_passwd(variant: str, salt: str, password: str) -> str:
+    result = subprocess.run(
+        ["openssl", "passwd", f"-{variant}", "-salt", salt, password],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return result.stdout.strip()
+
+
 VECTOR_PASSWORD = "lab123"
 # Real value from a device.
 VECTOR_SHA256 = "$5$itHMToxg$IAeDKDuWsSCoL2W7fognCW8cyNj4YE9ZhDvCoWFC5y/"
@@ -97,55 +110,87 @@ def test_rounds_form_cross_checked_against_openssl_default_variant():
     assert value.startswith("$6$rounds=7000$abcdefgh$")
 
 
-@pytest.mark.parametrize(
-    "magic,rounds_field",
-    [
-        (jep.MAGIC_SHA256, "rounds=5000$"),  # canonical, at the default count
-        (jep.MAGIC_SHA256, "rounds=007000$"),  # non-canonical: leading zeros
-        (jep.MAGIC_SHA512, "rounds=007000$"),  # same, other variant
-    ],
-)
-def test_check_preserves_the_rounds_field_of_the_given_value(magic, rounds_field):
-    """A value's rounds= field, canonical or not, must round-trip verbatim:
-    `given` echoes exactly what was parsed, and `recomputed` must reproduce
-    the same field for a correct password to compare equal - not
-    str(int(rounds)), which would silently canonicalise a non-canonical
-    field (e.g. "rounds=007000") and make a correct password report as NOT
-    matching. Regression for that exact failure mode; see also the two
-    dedicated non-canonical-rounds tests below.
-    """
-    value = jep.encrypt(VECTOR_PASSWORD, salt=f"{magic}{rounds_field}abcdefgh")
-    assert value.startswith(f"{magic}{rounds_field}abcdefgh$")
+def test_check_preserves_the_rounds_field_of_the_given_value():
+    """A value with an explicit, already-canonical rounds= field, even at
+    the default count, must round-trip with that field intact (glibc/
+    openssl do the same). Non-canonical rounds fields are covered separately
+    below, against oracle-derived vectors rather than our own encrypt()."""
+    value = jep.encrypt(VECTOR_PASSWORD, salt="$5$rounds=5000$abcdefgh")
+    assert value.startswith("$5$rounds=5000$abcdefgh$")
     given, recomputed, match = jep.check(value, VECTOR_PASSWORD)
     assert given == value
     assert recomputed == value
     assert match is True
 
 
-# Real digest cross-checked against `openssl passwd -6 -salt
-# 'rounds=007000$abcdefgh' lab123`, which accepts the leading zeros and
-# computes this exact digest (identical to the canonical `rounds=7000`).
-_NON_CANONICAL_ROUNDS_VECTOR = (
+@pytest.mark.parametrize("magic", [jep.MAGIC_SHA256, jep.MAGIC_SHA512])
+def test_encrypt_canonicalises_a_non_canonical_rounds_field(magic):
+    """encrypt() mints a *new* value, so it must never inherit a
+    non-canonical rounds= field (e.g. leading zeros) from the salt argument:
+    "rounds=007000" in must produce "rounds=7000" out. This is the opposite
+    rule from check(), which preserves what it is given (see the
+    non-canonical-rounds tests below) - encrypt() always normalises,
+    matching `openssl passwd`'s own output convention.
+    """
+    value = jep.encrypt(VECTOR_PASSWORD, salt=f"{magic}rounds=007000$abcdefgh")
+    assert value.startswith(f"{magic}rounds=7000$abcdefgh$")
+    assert "rounds=007000$" not in value
+
+
+@pytest.mark.skipif(not _HAVE_OPENSSL, reason="openssl is not available")
+def test_encrypt_canonical_rounds_output_matches_openssl_sha256():
+    variant = "5"
+    expected = _openssl_passwd(variant, "rounds=007000$abcdefgh", VECTOR_PASSWORD)
+    value = jep.encrypt(VECTOR_PASSWORD, salt="$5$rounds=007000$abcdefgh")
+    assert value == expected
+
+
+@pytest.mark.skipif(not _HAVE_OPENSSL, reason="openssl is not available")
+def test_encrypt_canonical_rounds_output_matches_openssl_sha512():
+    variant = "6"
+    expected = _openssl_passwd(variant, "rounds=007000$abcdefgh", VECTOR_PASSWORD)
+    value = jep.encrypt(VECTOR_PASSWORD, salt="$6$rounds=007000$abcdefgh")
+    assert value == expected
+
+
+# The hash fields below are the digests from `openssl passwd -5/-6 -salt
+# 'rounds=007000$abcdefgh' lab123`: openssl accepts the leading zeros as
+# input but normalises its own output to "rounds=7000$", so these vectors
+# are built by hand-splicing a non-canonical "rounds=007000$" prefix onto
+# openssl's real digest - never by calling this package's own encrypt() -
+# so the test cannot be satisfied by two bugs agreeing with each other.
+_NON_CANONICAL_ROUNDS_VECTOR_SHA256 = (
+    "$5$rounds=007000$abcdefgh$kdN5PnJqWO7Kjpjd.tXEYwKq64Z2SoXjgo2SqSFCC87"
+)
+_NON_CANONICAL_ROUNDS_VECTOR_SHA512 = (
     "$6$rounds=007000$abcdefgh$sI/ipHpgRHdKDg6kPyRGMV6JVrTreVzWJzNDcNGlIi."
     "FrxqaOd5hmrrFI20S/gEmON6Tj46C4X/NpaPpRPpkx0"
 )
 
 
-def test_check_accepts_a_correct_password_against_non_canonical_rounds():
+@pytest.mark.parametrize(
+    "vector",
+    [_NON_CANONICAL_ROUNDS_VECTOR_SHA256, _NON_CANONICAL_ROUNDS_VECTOR_SHA512],
+)
+def test_check_accepts_a_correct_password_against_non_canonical_rounds(vector):
     """Regression: a correct password must not report as a mismatch just
     because the given value's rounds= field has non-canonical leading
     zeros."""
-    given, recomputed, match = jep.check(_NON_CANONICAL_ROUNDS_VECTOR, "lab123")
-    assert given == _NON_CANONICAL_ROUNDS_VECTOR
+    given, recomputed, match = jep.check(vector, "lab123")
+    assert given == vector
     assert "rounds=007000$" in given
-    assert recomputed == _NON_CANONICAL_ROUNDS_VECTOR
+    assert recomputed == vector
     assert match is True
 
 
-def test_check_rejects_a_wrong_password_against_non_canonical_rounds():
-    given, recomputed, match = jep.check(_NON_CANONICAL_ROUNDS_VECTOR, "wrong")
-    assert given == _NON_CANONICAL_ROUNDS_VECTOR
-    assert recomputed != _NON_CANONICAL_ROUNDS_VECTOR
+@pytest.mark.parametrize(
+    "vector",
+    [_NON_CANONICAL_ROUNDS_VECTOR_SHA256, _NON_CANONICAL_ROUNDS_VECTOR_SHA512],
+)
+def test_check_rejects_a_wrong_password_against_non_canonical_rounds(vector):
+    given, recomputed, match = jep.check(vector, "wrong")
+    assert given == vector
+    assert recomputed != vector
     assert match is False
 
 
@@ -349,18 +394,6 @@ def test_check_rejects_hash_field_with_invalid_characters():
 
 
 # --- Cross-check against openssl (independent implementation) -------------
-
-_HAVE_OPENSSL = shutil.which("openssl") is not None
-
-
-def _openssl_passwd(variant: str, salt: str, password: str) -> str:
-    result = subprocess.run(
-        ["openssl", "passwd", f"-{variant}", "-salt", salt, password],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    return result.stdout.strip()
 
 
 @pytest.mark.skipif(not _HAVE_OPENSSL, reason="openssl is not available")

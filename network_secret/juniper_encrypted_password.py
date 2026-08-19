@@ -244,10 +244,22 @@ def _compute(magic: str, password: str, salt: str, rounds: int) -> str:
     return _sha_crypt.encode_digest(digest, _HASH_NAME[magic])
 
 
-def _format(magic: str, rounds_raw: str | None, salt: str, encoded: str) -> str:
-    """Assemble "$N$[rounds=<raw>$]salt$hash". See `_split_rounds` for why
-    `rounds_raw` is the original digit substring, not `str(rounds)`."""
-    rounds_field = f"{_ROUNDS_PREFIX}{rounds_raw}$" if rounds_raw is not None else ""
+def _format(magic: str, rounds_display: str | None, salt: str, encoded: str) -> str:
+    """Assemble "$N$[rounds=<rounds_display>$]salt$hash".
+
+    `rounds_display` is the exact digit string to write, or None to omit the
+    field entirely. The two callers deliberately pass different things here:
+    `check()` passes the raw digit substring parsed from the given value
+    (preserving e.g. non-canonical leading zeros, so a correct password's
+    recomputation matches what the user pasted - see `_split_rounds`), while
+    `encrypt()` passes `str(rounds)` (canonical digits only, since it is
+    minting a brand new value and must never inherit another tool's
+    formatting quirks - matching `openssl passwd`, which likewise accepts
+    non-canonical rounds on input but always normalises its own output).
+    """
+    rounds_field = (
+        f"{_ROUNDS_PREFIX}{rounds_display}$" if rounds_display is not None else ""
+    )
     return f"{magic}{rounds_field}{salt}${encoded}"
 
 
@@ -263,7 +275,11 @@ def encrypt(plaintext: str, salt: str | None = None) -> str:
       - a bare salt string, e.g. "abcdefgh" (up to 16 characters from the
         crypt alphabet "./0-9A-Za-z"): hashed at DEFAULT_ROUNDS as "$6$".
       - "rounds=N$abcdefgh": hashed at N rounds (MIN_ROUNDS-MAX_ROUNDS), as
-        "$6$", and the output carries the "rounds=N$" field.
+        "$6$", and the output carries the "rounds=N$" field. N is written
+        back in canonical decimal even if given with non-canonical leading
+        zeros (e.g. "rounds=007000" produces "rounds=7000" in the result):
+        a freshly minted value never inherits another tool's formatting,
+        matching `openssl passwd`'s own output.
       - either of the above prefixed with "$5$" or "$6$" to select the
         variant instead of the "$6$" default, e.g. "$5$abcdefgh" or
         "$5$rounds=10000$abcdefgh".
@@ -275,8 +291,12 @@ def encrypt(plaintext: str, salt: str | None = None) -> str:
         salt_chars = _sha_crypt.generate_salt()
     else:
         magic, rounds, rounds_raw, salt_chars = _parse_salt_arg(salt)
+    # Canonical digits only: a freshly minted value must not inherit a
+    # non-canonical rounds= field (e.g. leading zeros) from the salt
+    # argument. See _format's docstring.
+    rounds_display = str(rounds) if rounds_raw is not None else None
     encoded = _compute(magic, plaintext, salt_chars, rounds)
-    return _format(magic, rounds_raw, salt_chars, encoded)
+    return _format(magic, rounds_display, salt_chars, encoded)
 
 
 def decrypt(ciphertext: str) -> str:
