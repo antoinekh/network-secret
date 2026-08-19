@@ -97,15 +97,56 @@ def test_rounds_form_cross_checked_against_openssl_default_variant():
     assert value.startswith("$6$rounds=7000$abcdefgh$")
 
 
-def test_check_preserves_the_rounds_field_of_the_given_value():
-    """A value with an explicit rounds= field, even at the default count,
-    must round-trip with that field intact (glibc/openssl do the same)."""
-    value = jep.encrypt(VECTOR_PASSWORD, salt="$5$rounds=5000$abcdefgh")
-    assert value.startswith("$5$rounds=5000$abcdefgh$")
+@pytest.mark.parametrize(
+    "magic,rounds_field",
+    [
+        (jep.MAGIC_SHA256, "rounds=5000$"),  # canonical, at the default count
+        (jep.MAGIC_SHA256, "rounds=007000$"),  # non-canonical: leading zeros
+        (jep.MAGIC_SHA512, "rounds=007000$"),  # same, other variant
+    ],
+)
+def test_check_preserves_the_rounds_field_of_the_given_value(magic, rounds_field):
+    """A value's rounds= field, canonical or not, must round-trip verbatim:
+    `given` echoes exactly what was parsed, and `recomputed` must reproduce
+    the same field for a correct password to compare equal - not
+    str(int(rounds)), which would silently canonicalise a non-canonical
+    field (e.g. "rounds=007000") and make a correct password report as NOT
+    matching. Regression for that exact failure mode; see also the two
+    dedicated non-canonical-rounds tests below.
+    """
+    value = jep.encrypt(VECTOR_PASSWORD, salt=f"{magic}{rounds_field}abcdefgh")
+    assert value.startswith(f"{magic}{rounds_field}abcdefgh$")
     given, recomputed, match = jep.check(value, VECTOR_PASSWORD)
     assert given == value
     assert recomputed == value
     assert match is True
+
+
+# Real digest cross-checked against `openssl passwd -6 -salt
+# 'rounds=007000$abcdefgh' lab123`, which accepts the leading zeros and
+# computes this exact digest (identical to the canonical `rounds=7000`).
+_NON_CANONICAL_ROUNDS_VECTOR = (
+    "$6$rounds=007000$abcdefgh$sI/ipHpgRHdKDg6kPyRGMV6JVrTreVzWJzNDcNGlIi."
+    "FrxqaOd5hmrrFI20S/gEmON6Tj46C4X/NpaPpRPpkx0"
+)
+
+
+def test_check_accepts_a_correct_password_against_non_canonical_rounds():
+    """Regression: a correct password must not report as a mismatch just
+    because the given value's rounds= field has non-canonical leading
+    zeros."""
+    given, recomputed, match = jep.check(_NON_CANONICAL_ROUNDS_VECTOR, "lab123")
+    assert given == _NON_CANONICAL_ROUNDS_VECTOR
+    assert "rounds=007000$" in given
+    assert recomputed == _NON_CANONICAL_ROUNDS_VECTOR
+    assert match is True
+
+
+def test_check_rejects_a_wrong_password_against_non_canonical_rounds():
+    given, recomputed, match = jep.check(_NON_CANONICAL_ROUNDS_VECTOR, "wrong")
+    assert given == _NON_CANONICAL_ROUNDS_VECTOR
+    assert recomputed != _NON_CANONICAL_ROUNDS_VECTOR
+    assert match is False
 
 
 def test_no_rounds_field_when_not_specified():
@@ -266,6 +307,16 @@ def test_check_rejects_malformed_salt(value):
 def test_encrypt_rejects_malformed_salt_argument(bad_salt):
     with pytest.raises(ValueError):
         jep.encrypt(VECTOR_PASSWORD, salt=bad_salt)
+
+
+def test_salt_at_exactly_the_max_length_is_accepted():
+    """Boundary: a 16-character salt is the longest a real device ever
+    writes, and must not be rejected by the length check (which compares
+    with '>', not '>=')."""
+    salt_16 = "a" * 16
+    value = jep.encrypt(VECTOR_PASSWORD, salt=f"$5${salt_16}")
+    assert value.startswith(f"$5${salt_16}$")
+    assert jep.check(value, VECTOR_PASSWORD)[2] is True
 
 
 # --- Empty / malformed values --------------------------------------------

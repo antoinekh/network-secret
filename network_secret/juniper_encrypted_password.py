@@ -139,21 +139,41 @@ def _parse_rounds_number(text: str) -> int:
     return value
 
 
-def _split_rounds(text: str) -> tuple[int, bool, str]:
+def _split_rounds(text: str) -> tuple[int, str | None, str]:
     """Split an optional leading "rounds=N$" from `text`.
 
-    Returns (rounds, rounds_was_specified, remainder). The out-of-range
-    check happens here, before any hashing is ever attempted.
+    Returns (rounds, raw_rounds_field, remainder). `raw_rounds_field` is the
+    exact digit substring as given (e.g. "007000"), or None if no "rounds="
+    field was present at all. It is kept verbatim, leading zeros and all,
+    rather than reduced to `rounds` and reformatted with `str()`: a value
+    written by another tool may carry non-canonical digits (openssl accepts
+    and computes `rounds=007000` identically to `rounds=7000`), and if
+    `_format` re-emitted that field from the int it would silently
+    canonicalise it - making `recomputed` diverge from `given` in the rounds
+    field alone, and a correct password would then compare as a mismatch.
+    The out-of-range check happens here, before any hashing is attempted.
     """
     if text.startswith(_ROUNDS_PREFIX):
         num_part, sep, remainder = text[len(_ROUNDS_PREFIX):].partition("$")
         if not sep:
             raise ValueError(f"Malformed rounds field: {text!r}")
-        return _parse_rounds_number(num_part), True, remainder
-    return DEFAULT_ROUNDS, False, text
+        return _parse_rounds_number(num_part), num_part, remainder
+    return DEFAULT_ROUNDS, None, text
 
 
 def _validate_salt(salt: str) -> None:
+    """Reject an empty, over-long, or out-of-alphabet salt.
+
+    Drepper's spec (and openssl) silently truncate a salt longer than
+    _MAX_SALT_LEN to that length rather than rejecting it. This module
+    rejects instead, deliberately diverging from the spec: it matches this
+    codebase's strictness elsewhere (nokia_sros_password rejects a malformed
+    salt rather than coercing it), and a real JUNOS device can never emit an
+    over-long salt in the first place, since it truncates before writing
+    config. Silently accepting input this module would then treat
+    differently from the device - by hashing against the untruncated salt -
+    is worse than refusing it outright.
+    """
     if not salt:
         raise ValueError("Empty salt")
     if len(salt) > _MAX_SALT_LEN:
@@ -184,37 +204,39 @@ def _validate_hash_field(hash_field: str, magic: str) -> None:
         )
 
 
-def _parse_salt_arg(salt: str) -> tuple[str, int, bool, str]:
-    """Parse an `encrypt()` salt argument into (magic, rounds, rounds_specified, salt).
+def _parse_salt_arg(salt: str) -> tuple[str, int, str | None, str]:
+    """Parse an `encrypt()` salt argument into (magic, rounds, rounds_raw, salt).
 
     Accepts a bare salt ("abcdefgh"), a "rounds=N$salt" form, or either of
     those prefixed with "$5$"/"$6$" to select the variant. With no "$5$"/
-    "$6$" prefix, the variant defaults to MAGIC_SHA512.
+    "$6$" prefix, the variant defaults to MAGIC_SHA512. `rounds_raw` is the
+    verbatim digit substring (see `_split_rounds`), or None if not given.
     """
     text = salt.strip()
     if text.startswith("$"):
         magic, rest = _parse_prefix(text)
     else:
         magic, rest = MAGIC_SHA512, text
-    rounds, rounds_specified, salt_chars = _split_rounds(rest)
+    rounds, rounds_raw, salt_chars = _split_rounds(rest)
     _validate_salt(salt_chars)
-    return magic, rounds, rounds_specified, salt_chars
+    return magic, rounds, rounds_raw, salt_chars
 
 
-def _parse_value(value: str) -> tuple[str, int, bool, str, str]:
+def _parse_value(value: str) -> tuple[str, int, str | None, str, str]:
     """Parse a full "$5$[rounds=N$]salt$hash" value, decoration and all.
 
-    Returns (magic, rounds, rounds_specified, salt, hash_field).
+    Returns (magic, rounds, rounds_raw, salt, hash_field). `rounds_raw` is
+    the verbatim digit substring (see `_split_rounds`), or None if not given.
     """
     text = _strip_decoration(value)
     magic, rest = _parse_prefix(text)
-    rounds, rounds_specified, rest = _split_rounds(rest)
+    rounds, rounds_raw, rest = _split_rounds(rest)
     salt, sep, hash_field = rest.partition("$")
     if not sep:
         raise ValueError(f"Malformed value: missing hash field: {value!r}")
     _validate_salt(salt)
     _validate_hash_field(hash_field, magic)
-    return magic, rounds, rounds_specified, salt, hash_field
+    return magic, rounds, rounds_raw, salt, hash_field
 
 
 def _compute(magic: str, password: str, salt: str, rounds: int) -> str:
@@ -222,10 +244,10 @@ def _compute(magic: str, password: str, salt: str, rounds: int) -> str:
     return _sha_crypt.encode_digest(digest, _HASH_NAME[magic])
 
 
-def _format(
-    magic: str, rounds: int, rounds_specified: bool, salt: str, encoded: str
-) -> str:
-    rounds_field = f"{_ROUNDS_PREFIX}{rounds}$" if rounds_specified else ""
+def _format(magic: str, rounds_raw: str | None, salt: str, encoded: str) -> str:
+    """Assemble "$N$[rounds=<raw>$]salt$hash". See `_split_rounds` for why
+    `rounds_raw` is the original digit substring, not `str(rounds)`."""
+    rounds_field = f"{_ROUNDS_PREFIX}{rounds_raw}$" if rounds_raw is not None else ""
     return f"{magic}{rounds_field}{salt}${encoded}"
 
 
@@ -249,12 +271,12 @@ def encrypt(plaintext: str, salt: str | None = None) -> str:
     if salt is None:
         magic = MAGIC_SHA512
         rounds = DEFAULT_ROUNDS
-        rounds_specified = False
+        rounds_raw = None
         salt_chars = _sha_crypt.generate_salt()
     else:
-        magic, rounds, rounds_specified, salt_chars = _parse_salt_arg(salt)
+        magic, rounds, rounds_raw, salt_chars = _parse_salt_arg(salt)
     encoded = _compute(magic, plaintext, salt_chars, rounds)
-    return _format(magic, rounds, rounds_specified, salt_chars, encoded)
+    return _format(magic, rounds_raw, salt_chars, encoded)
 
 
 def decrypt(ciphertext: str) -> str:
@@ -270,10 +292,12 @@ def check(ciphertext: str, other: str) -> tuple[str, str, bool]:
 
     The variant, rounds, and salt are taken from `ciphertext` (after
     stripping config decoration - see SECRET_DATA_MARKER), so an equal
-    password reproduces the whole value. Returns (given, recomputed, match).
+    password reproduces the whole value - including a non-canonical rounds
+    field such as "rounds=007000$", which is preserved verbatim rather than
+    reformatted (see `_split_rounds`). Returns (given, recomputed, match).
     """
-    magic, rounds, rounds_specified, salt, _hash_field = _parse_value(ciphertext)
+    magic, rounds, rounds_raw, salt, _hash_field = _parse_value(ciphertext)
     encoded = _compute(magic, other, salt, rounds)
-    recomputed = _format(magic, rounds, rounds_specified, salt, encoded)
+    recomputed = _format(magic, rounds_raw, salt, encoded)
     given = _strip_decoration(ciphertext)
     return given, recomputed, hmac.compare_digest(given, recomputed)
