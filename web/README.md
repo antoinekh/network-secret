@@ -1,6 +1,6 @@
 # Network Secret - website
 
-A static, **fully client-side** toolkit to decode and encode network device secret formats: Juniper/HPE `$9$`, `$8$`, Nokia SR OS `custom-hash`, and Cisco IOS type 6, 7, 8 and 9. Every byte of computation happens in your browser - nothing is ever sent to a server - so it deploys to any static host (built for **Cloudflare Pages**).
+A static, **fully client-side** toolkit to decode, encode, hash and verify network device secret formats: Juniper/HPE `$9$`, `$8$`, Nokia SR OS `custom-hash`, and Cisco IOS type 6, 7, 8 and 9. Every byte of computation happens in your browser - nothing is ever sent to a server - so it deploys to any static host (built for **Cloudflare Pages**).
 
 Formats:
 
@@ -71,7 +71,7 @@ src/
     Header / Footer / Badge / CopyButton
 ```
 
-The catalogue holds two kinds of entry: **converters** (interactive `Cipher` modules) and **explainers** (documentation-only pages for formats we deliberately do not decode here). `registry.ts` assembles both into one `catalogue`, stamping each with a `kind` and a derived two-digit index. The home cards, nav tabs, routes, pages, and titles are all generated from it. Every entry lives at a **top-level path** `/<id>` (e.g. `/juniper8`, `/hash2`) - there is no `/c/` prefix; unknown paths 404 client-side. The `public/_redirects` file gives Cloudflare Pages the SPA fallback so deep links resolve to `index.html`. The nav bar (`Header.svelte`) groups the catalogue by `vendor` (`src/lib/nav.ts`), one menu per vendor, opening on hover, click and keyboard focus; it also carries a link to the source repository beside the theme toggle.
+The catalogue holds two kinds of entry: **converters** (interactive `Cipher` modules) and **explainers** (documentation-only pages for formats we deliberately do not decode here). `registry.ts` assembles both into one `catalogue`, stamping each with a `kind` and a derived two-digit index. The home cards, nav tabs, routes, pages, and titles are all generated from it. Every entry lives at a **top-level path** `/<id>` (e.g. `/juniper8`, `/hash2`) - there is no `/c/` prefix; unknown paths 404 client-side. The `public/_redirects` file gives Cloudflare Pages the SPA fallback so deep links resolve to `index.html`. The nav bar (`Header.svelte`) groups the catalogue by `vendor` (`src/lib/nav.ts`), one menu per vendor: click or tap toggles a menu open, and keyboard users Tab to the trigger and press Enter or Space, since focus alone does not open it, while Escape closes the menu and returns focus to its trigger; hover also opens a menu, but only where `window.matchMedia("(hover: hover)")` is true. It also carries a link to the source repository beside the theme toggle.
 
 ### Adding a converter
 
