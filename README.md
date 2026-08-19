@@ -33,7 +33,7 @@ The two implementations share known-answer vectors, so keeping them in one repo 
 | `$8$` | `cisco-type8` | `network_secret.cisco_type8` | Cisco IOS PBKDF2-SHA256 password hash - one-way |
 | `$9$` | `cisco-type9` | `network_secret.cisco_type9` | Cisco IOS scrypt password hash - one-way |
 
-> **`$8$` and `$9$` mean two different things.** Juniper/HPE and Cisco both use these markers, for unrelated algorithms. A Juniper/HPE `$9$` is a keyless substitution cipher; a Cisco `$9$` is an scrypt password hash. Pick the subcommand by the device the value came from, not by the prefix. `network-secret` never guesses between them.
+> **`$8$` and `$9$` mean two different things.** Juniper/HPE and Cisco both use these markers, for unrelated algorithms. A Juniper/HPE `$9$` is a keyless substitution cipher; a Cisco `$9$` is a scrypt password hash. Pick the subcommand by the device the value came from, not by the prefix. `network-secret` never guesses between them.
 
 ## Install
 
@@ -90,10 +90,10 @@ hash8 = cisco_type8.encrypt("BGPsecret1")
 given, recomputed, match = cisco_type8.check(hash8, "BGPsecret1")
 # match is True
 cisco_type8.decrypt(hash8)
-# ValueError: Cisco type 8 is a one-way hash and cannot be decrypted.
+# ValueError: Cisco type 8 is a one-way hash and cannot be decrypted. Use --check to test a password against it.
 ```
 
-All seven `check()` functions return a `tuple[str, str, bool]`: the two decrypted plaintexts and whether they match. For Cisco type 6 and type 7, the second argument to `check()` is always read as cleartext, because neither format carries a marker that tells it apart from a password.
+Five of the seven `check()` functions return a `tuple[str, str, bool]`: the two decrypted plaintexts and whether they match. Cisco type 8 and type 9 cannot decrypt anything, so they return the hash you passed in, the hash recomputed from the candidate password, and whether those match. For Cisco type 6 and type 7, the second argument to `check()` is always read as cleartext, because neither format carries a marker that tells it apart from a password.
 
 ## Command-line usage
 
@@ -184,7 +184,7 @@ network-secret cisco-type9 --encrypt 'BGPsecret1'
 network-secret cisco-type9 --check '$9$ihSswXDbk0kaVK$o.uy...' 'cisco123'
 
 network-secret cisco-type9 --decrypt '$9$ihSswXDbk0kaVK$o.uy...'
-# error: Cisco type 9 is a one-way hash and cannot be decrypted.
+# error: Cisco type 9 is a one-way hash and cannot be decrypted. Use --check to test a password against it.
 ```
 
 ### Exit codes
