@@ -18,3 +18,18 @@ def test_keyed_is_false_only_for_none_key_kind():
     )
     assert keyless.keyed is False
     assert keyed.keyed is True
+
+
+def test_cipher_env_var_defaults_to_none():
+    from network_secret.types import Cipher, KeyKind
+
+    cipher = Cipher(
+        id="x",
+        vendor="v",
+        name="n",
+        key_kind=KeyKind.NONE,
+        encrypt=lambda s: s,
+        decrypt=lambda s: s,
+        check=lambda a, b: (a, b, a == b),
+    )
+    assert cipher.env_var is None

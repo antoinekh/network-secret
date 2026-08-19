@@ -36,6 +36,9 @@ class Cipher:
     encrypt: Callable[..., str]
     decrypt: Callable[..., str]
     check: Callable[..., tuple[str, str, bool]]
+    # Environment variable the CLI falls back to when the key flag is absent.
+    # None for keyless ciphers.
+    env_var: str | None = None
 
     @property
     def keyed(self) -> bool:

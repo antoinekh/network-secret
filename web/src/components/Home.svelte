@@ -2,11 +2,17 @@
   import { link } from "../lib/router";
   import { catalogue } from "../lib/ciphers/registry";
   import Badge from "./Badge.svelte";
+  import { formatVendorList } from "./vendor-list";
 
   const converters = catalogue.filter((c) => c.kind === "converter");
   const available = converters.filter((c) => c.status === "available").length;
   const planned = converters.filter((c) => c.status === "planned").length;
   const explainers = catalogue.filter((c) => c.kind === "explainer").length;
+
+  // Derived, never hardcoded: web/CLAUDE.md requires the page to follow the
+  // catalogue, and the old hardcoded sentence went stale as formats were added.
+  const vendors = [...new Set(catalogue.map((c) => c.vendor))];
+  const vendorList = formatVendorList(vendors);
 </script>
 
 <section class="hero wrap">
@@ -19,9 +25,8 @@
     <span class="reveal" style="animation-delay: 250ms">secrets.</span>
   </h1>
   <p class="lede reveal" style="animation-delay: 340ms">
-    Juniper/HPE <span class="mono">$9$</span>, Juniper/HPE <span class="mono">$8$</span>, and Nokia
-    <span class="mono">custom-hash</span>, computed entirely in your browser. Nothing is ever
-    sent to a server.
+    Secrets for {vendorList}, computed entirely in your browser. Nothing is ever sent to a
+    server.
   </p>
 </section>
 
@@ -59,7 +64,9 @@
             </span>
             <span class="badges">
               <Badge label={c.vendor} />
-              {#if c.reversible}
+              {#if c.oneWay}
+                <Badge label="One-way" tone="accent" />
+              {:else if c.reversible}
                 <Badge label="Reversible" />
               {:else if c.keyed}
                 <Badge label="Keyed" tone="accent" />
@@ -103,9 +110,6 @@
     font-size: clamp(1rem, 2.2vw, 1.35rem);
     color: var(--ink-2);
     line-height: 1.5;
-  }
-  .lede .mono {
-    color: var(--ink);
   }
   .cat-head {
     display: flex;

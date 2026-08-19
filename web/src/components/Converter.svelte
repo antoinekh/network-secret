@@ -5,22 +5,51 @@
 
   let { cipher }: { cipher: Cipher } = $props();
 
-  type Mode = "decode" | "encode";
+  type Mode = "decode" | "encode" | "verify";
+
+  const oneWay = $derived(cipher.oneWay === true);
+  // One-way formats have nothing to decode, so their pair is Hash / Verify.
+  const modes = $derived<Mode[]>(oneWay ? ["encode", "verify"] : ["decode", "encode"]);
+
+  // "Encode" reads as "Hash" for a one-way format, so the label is a function
+  // of both the mode and the cipher.
+  function tabLabel(m: Mode): string {
+    if (m === "encode") return oneWay ? "Hash" : "Encode";
+    return m === "decode" ? "Decode" : "Verify";
+  }
+
   let mode = $state<Mode>("decode");
   let input = $state("");
+  let candidate = $state("");
   let key = $state("");
   let showKey = $state(false);
   let busy = $state(false);
   let result = $state<{ ok: boolean; value: string } | null>(null);
 
+  // A one-way cipher starts on Hash; everything else starts on Decode.
+  // This only resets `mode`: it relies on App.svelte mounting this component
+  // under {#key routeKey}, which remounts it on every route change so
+  // `input`, `candidate` and `key` also start fresh. If Converter is ever
+  // reused without that wrapper, those fields will need resetting here too.
+  $effect(() => {
+    if (!modes.includes(mode)) {
+      mode = modes[0];
+      result = null;
+    }
+  });
+
   const inputLabel = $derived(
     mode === "decode"
       ? `Encoded value${cipher.magic ? ` (${cipher.magic}…)` : ""}`
-      : "Cleartext",
+      : mode === "verify"
+        ? `Hash${cipher.magic ? ` (${cipher.magic}…)` : ""}`
+        : "Cleartext",
   );
-  const runLabel = $derived(mode === "decode" ? "Decode" : "Encode");
+  const runLabel = $derived(
+    mode === "decode" ? "Decode" : mode === "verify" ? "Verify" : oneWay ? "Hash" : "Encode",
+  );
   const placeholder = $derived(
-    mode === "decode" ? (cipher.example?.encoded ?? `${cipher.magic}…`) : "secret",
+    mode === "encode" ? "secret" : (cipher.example?.encoded ?? `${cipher.magic}…`),
   );
 
   function setMode(next: Mode) {
@@ -36,11 +65,15 @@
       // Config values are pasted wrapped in quotes; strip them for decode and
       // for the key. Plaintext to encode is left exactly as typed.
       const k = unwrapValue(key) || undefined;
-      const value =
-        mode === "decode"
-          ? await cipher.decode(unwrapValue(input), k)
-          : await cipher.encode(input, k);
-      result = { ok: true, value };
+      if (mode === "verify") {
+        if (!cipher.verify) throw new Error("This format cannot verify");
+        const match = await cipher.verify(unwrapValue(input), candidate);
+        result = { ok: true, value: match ? "Match" : "No match" };
+      } else if (mode === "decode") {
+        result = { ok: true, value: await cipher.decode(unwrapValue(input), k) };
+      } else {
+        result = { ok: true, value: await cipher.encode(input, k) };
+      }
     } catch (e) {
       result = { ok: false, value: e instanceof Error ? e.message : String(e) };
     } finally {
@@ -51,7 +84,8 @@
   function fillExample() {
     const ex = cipher.example;
     if (!ex) return;
-    input = mode === "decode" ? ex.encoded : ex.plaintext;
+    input = mode === "encode" ? ex.plaintext : ex.encoded;
+    if (mode === "verify") candidate = ex.plaintext;
     if (ex.key) key = ex.key;
     void run();
   }
@@ -59,18 +93,14 @@
 
 <section class="cv">
   <div class="modes" role="tablist" aria-label="Mode">
-    <button
-      role="tab"
-      aria-selected={mode === "decode"}
-      class:active={mode === "decode"}
-      onclick={() => setMode("decode")}>Decode</button
-    >
-    <button
-      role="tab"
-      aria-selected={mode === "encode"}
-      class:active={mode === "encode"}
-      onclick={() => setMode("encode")}>Encode</button
-    >
+    {#each modes as m (m)}
+      <button
+        role="tab"
+        aria-selected={mode === m}
+        class:active={mode === m}
+        onclick={() => setMode(m)}>{tabLabel(m)}</button
+      >
+    {/each}
   </div>
 
   <form
@@ -91,6 +121,20 @@
         autocomplete="off"
       ></textarea>
     </label>
+
+    {#if mode === "verify"}
+      <label class="field">
+        <span class="lab eyebrow">Cleartext to test</span>
+        <input
+          class="mono in"
+          bind:value={candidate}
+          placeholder="secret"
+          spellcheck="false"
+          autocapitalize="off"
+          autocomplete="off"
+        />
+      </label>
+    {/if}
 
     {#if cipher.keyed}
       <label class="field">
@@ -115,7 +159,7 @@
     {/if}
 
     <div class="actions">
-      <button class="run" type="submit" disabled={busy || !input}>
+      <button class="run" type="submit" disabled={busy || !input || (mode === "verify" && !candidate)}>
         {busy ? "Working…" : runLabel}
       </button>
       {#if cipher.example}
@@ -146,6 +190,13 @@
   {#if mode === "encode" && cipher.reversible}
     <p class="hint mono">
       Output varies on every run (random filler); all forms decode to the same value.
+    </p>
+  {/if}
+
+  {#if mode === "encode" && oneWay}
+    <p class="hint mono">
+      A fresh random salt is drawn each run, so the same password hashes differently every time.
+      Use Verify to test a password against an existing hash.
     </p>
   {/if}
 </section>

@@ -3,11 +3,23 @@
 One Cipher entry per format. The CLI builds its subcommands and its --list
 output entirely from this list; adding a format means adding a module and one
 entry here.
+
+Cisco type 8 and type 9 are one-way hashes. They keep the Cipher shape:
+encrypt hashes, check verifies, and decrypt raises. Their names say so, so
+--list shows it.
 """
 
 from __future__ import annotations
 
-from . import juniper8, juniper9, nokia_sros_custom_hash
+from . import (
+    cisco_type6,
+    cisco_type7,
+    cisco_type8,
+    cisco_type9,
+    juniper8,
+    juniper9,
+    nokia_sros_custom_hash,
+)
 from .types import Cipher, KeyKind
 
 REGISTRY: list[Cipher] = [
@@ -28,6 +40,7 @@ REGISTRY: list[Cipher] = [
         encrypt=juniper8.encrypt,
         decrypt=juniper8.decrypt,
         check=juniper8.check,
+        env_var=juniper8.ENV_MASTER,
     ),
     Cipher(
         id="nokia-sros-custom-hash",
@@ -37,6 +50,44 @@ REGISTRY: list[Cipher] = [
         encrypt=nokia_sros_custom_hash.encrypt,
         decrypt=nokia_sros_custom_hash.decrypt,
         check=nokia_sros_custom_hash.check,
+        env_var=nokia_sros_custom_hash.ENV_KEY,
+    ),
+    Cipher(
+        id="cisco-type6",
+        vendor="Cisco",
+        name="Cisco IOS type 6",
+        key_kind=KeyKind.MASTER_PASSWORD,
+        encrypt=cisco_type6.encrypt,
+        decrypt=cisco_type6.decrypt,
+        check=cisco_type6.check,
+        env_var=cisco_type6.ENV_MASTER_KEY,
+    ),
+    Cipher(
+        id="cisco-type7",
+        vendor="Cisco",
+        name="Cisco IOS type 7",
+        key_kind=KeyKind.NONE,
+        encrypt=cisco_type7.encrypt,
+        decrypt=cisco_type7.decrypt,
+        check=cisco_type7.check,
+    ),
+    Cipher(
+        id="cisco-type8",
+        vendor="Cisco",
+        name="Cisco IOS type 8 (one-way)",
+        key_kind=KeyKind.NONE,
+        encrypt=cisco_type8.encrypt,
+        decrypt=cisco_type8.decrypt,
+        check=cisco_type8.check,
+    ),
+    Cipher(
+        id="cisco-type9",
+        vendor="Cisco",
+        name="Cisco IOS type 9 (one-way)",
+        key_kind=KeyKind.NONE,
+        encrypt=cisco_type9.encrypt,
+        decrypt=cisco_type9.decrypt,
+        check=cisco_type9.check,
     ),
 ]
 

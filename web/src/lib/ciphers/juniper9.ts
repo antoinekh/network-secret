@@ -139,8 +139,8 @@ export const juniper9: Cipher = {
   },
   links: [
     {
-      label: "github.com/antoinekh/juniper9-crypt",
-      url: "https://github.com/antoinekh/juniper9-crypt",
+      label: "github.com/antoinekh/network-secret",
+      url: "https://github.com/antoinekh/network-secret",
       note: "Python library & CLI, plus the documented algorithm.",
     },
   ],

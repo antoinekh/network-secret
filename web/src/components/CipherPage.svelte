@@ -16,6 +16,9 @@
       <p class="tag">{cipher.tagline}</p>
       <div class="badges">
         <Badge label={cipher.vendor} />
+        {#if cipher.oneWay}
+          <Badge label="One-way hash" tone="accent" />
+        {/if}
         {#if cipher.reversible}
           <Badge label="Reversible · keyless" />
         {/if}

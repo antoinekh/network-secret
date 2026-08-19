@@ -24,6 +24,7 @@
   "dependencies": {
     "@fontsource-variable/hanken-grotesk": "^5.2.8",
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
-    "aes-js": "^3.1.2"
+    "aes-js": "^3.1.2",
+    "scrypt-js": "^3.0.1"
   }
 }

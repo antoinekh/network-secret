@@ -1,10 +1,34 @@
 <script lang="ts">
   import { path, link } from "../lib/router";
   import { catalogue } from "../lib/ciphers/registry";
+  import { toggleVendor, vendorGroups } from "../lib/nav";
   import { theme, toggleTheme } from "../lib/theme";
+
+  const groups = vendorGroups(catalogue);
+  let open = $state<string | null>(null);
+  const triggers: Record<string, HTMLButtonElement> = {};
+
+  // Touch browsers synthesise mouseenter on tap, which would fight the click
+  // toggle below. Only attach hover on devices that genuinely hover.
+  const canHover =
+    typeof window !== "undefined" && window.matchMedia("(hover: hover)").matches;
 
   function isActive(current: string, href: string): boolean {
     return (current.replace(/\/+$/, "") || "/") === href;
+  }
+
+  function groupIsActive(vendor: string): boolean {
+    const group = groups.find((g) => g.vendor === vendor);
+    return group?.entries.some((e) => isActive($path, `/${e.id}`)) ?? false;
+  }
+
+  function onKeydown(event: KeyboardEvent) {
+    if (event.key !== "Escape") return;
+    const wasOpen = open;
+    open = null;
+    // Return focus to the trigger the menu came from, rather than letting it
+    // fall to <body> when the focused menu item is removed from the DOM.
+    if (wasOpen) triggers[wasOpen]?.focus();
   }
 </script>
 
@@ -16,6 +40,14 @@
     </a>
     <div class="top-right">
       <span class="meta mono">Runs locally · no backend</span>
+      <a
+        class="repo mono"
+        href="https://github.com/antoinekh/network-secret"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Source code on GitHub (opens in a new tab)"
+        ><span class="repo-label">Source</span> <span aria-hidden="true">↗</span></a
+      >
       <button
         class="theme mono"
         onclick={toggleTheme}
@@ -29,25 +61,60 @@
   <nav class="nav-wrap" aria-label="Sections">
     <div class="wrap nav">
       <a class="tab" class:active={isActive($path, "/")} href="/" use:link>Catalogue</a>
-      {#each catalogue as c (c.id)}
-        {#if c.kind === "explainer"}
-          <a
-            class="tab withpill"
-            class:active={isActive($path, `/${c.id}`)}
-            href={`/${c.id}`}
-            use:link>{c.name}<span class="pill">doc</span></a
+      {#each groups as group (group.vendor)}
+        <div
+          class="group"
+          role="none"
+          onmouseenter={canHover ? () => (open = group.vendor) : undefined}
+          onmouseleave={canHover ? () => (open = null) : undefined}
+        >
+          <button
+            class="tab"
+            class:active={groupIsActive(group.vendor)}
+            aria-expanded={open === group.vendor}
+            bind:this={triggers[group.vendor]}
+            onclick={(e) => {
+              e.stopPropagation();
+              open = toggleVendor(open, group.vendor);
+            }}
           >
-        {:else if c.status === "available"}
-          <a class="tab" class:active={isActive($path, `/${c.id}`)} href={`/${c.id}`} use:link
-            >{c.name}</a
-          >
-        {:else}
-          <span class="tab disabled">{c.name}<span class="pill">soon</span></span>
-        {/if}
+            {group.vendor}<span class="caret" aria-hidden="true">▾</span>
+          </button>
+          {#if open === group.vendor}
+            <ul class="menu">
+              {#each group.entries as entry (entry.id)}
+                <li>
+                  {#if entry.kind === "explainer"}
+                    <a
+                      class="item"
+                      class:current={isActive($path, `/${entry.id}`)}
+                      href={`/${entry.id}`}
+                      use:link>{entry.name}<span class="pill">doc</span></a
+                    >
+                  {:else if entry.status === "available"}
+                    <a
+                      class="item"
+                      class:current={isActive($path, `/${entry.id}`)}
+                      href={`/${entry.id}`}
+                      use:link
+                      >{entry.name}{#if entry.oneWay}<span class="pill">one-way</span>{/if}</a
+                    >
+                  {:else}
+                    <span class="item disabled" aria-disabled="true"
+                      >{entry.name}<span class="pill">soon</span></span
+                    >
+                  {/if}
+                </li>
+              {/each}
+            </ul>
+          {/if}
+        </div>
       {/each}
     </div>
   </nav>
 </header>
+
+<svelte:window onkeydown={onKeydown} onclick={() => (open = null)} />
 
 <style>
   .hdr {
@@ -99,7 +166,8 @@
     text-transform: uppercase;
     color: var(--accent);
   }
-  .theme {
+  .theme,
+  .repo {
     background: var(--paper-2);
     border: 1px solid var(--line-2);
     border-radius: 999px;
@@ -114,10 +182,15 @@
       border-color 0.15s ease,
       transform 0.15s ease;
   }
-  .theme:hover {
+  .theme:hover,
+  .repo:hover {
     color: var(--accent);
     border-color: var(--accent);
     transform: translateY(-1px);
+  }
+  .repo {
+    display: inline-flex;
+    align-items: center;
   }
   .nav-wrap {
     padding-bottom: 0.4rem;
@@ -125,11 +198,77 @@
   .nav {
     display: flex;
     gap: 0.4rem;
-    overflow-x: auto;
-    scrollbar-width: none;
+    flex-wrap: wrap;
   }
-  .nav::-webkit-scrollbar {
-    display: none;
+  .group {
+    position: relative;
+    flex: 0 0 auto;
+  }
+  .group .tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+  .caret {
+    font-size: 0.6rem;
+    opacity: 0.7;
+  }
+  .menu {
+    position: absolute;
+    top: calc(100% + 0.35rem);
+    left: 0;
+    z-index: 30;
+    min-width: 14rem;
+    display: flex;
+    flex-direction: column;
+    padding: 0.35rem;
+    margin: 0;
+    list-style: none;
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+  }
+  /* The menu sits 0.35rem below its trigger. That strip belongs to neither
+     the trigger nor the menu, so a pointer crossing it would leave .group and
+     close the menu before an item could be reached. This invisible bridge
+     makes the path contiguous. Keep its height equal to the offset in `top`
+     above. */
+  .menu::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -0.35rem;
+    height: 0.35rem;
+  }
+  .item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6em;
+    padding: 0.5rem 0.7rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+  a.item:hover {
+    color: var(--ink);
+    background: var(--paper-3);
+  }
+  .item.current {
+    color: #fff;
+    background: var(--accent);
+  }
+  .item.disabled {
+    color: var(--ink-3);
+    opacity: 0.6;
+    cursor: default;
   }
   .tab {
     flex: 0 0 auto;
@@ -152,17 +291,6 @@
     color: #fff;
     background: var(--accent);
   }
-  .tab.disabled,
-  .tab.withpill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45em;
-  }
-  .tab.disabled {
-    color: var(--ink-3);
-    opacity: 0.6;
-    cursor: default;
-  }
   .pill {
     font-size: 0.56rem;
     letter-spacing: 0.06em;
@@ -172,6 +300,9 @@
   }
   @media (max-width: 560px) {
     .meta {
+      display: none;
+    }
+    .repo-label {
       display: none;
     }
   }

@@ -88,7 +88,7 @@ export async function decode(encoded: string, key?: string): Promise<string> {
 export const nokiaCustomHash: Cipher = {
   id: "nokia-custom-hash",
   name: "Nokia custom-hash",
-  vendor: "Nokia",
+  vendor: "Nokia SR OS",
   magic: "",
   tagline: "Deterministic AES-ECB hash-control secrets for SR OS, portable across nodes that share the key.",
   reversible: false,
@@ -106,6 +106,13 @@ export const nokiaCustomHash: Cipher = {
     plaintext: "L@bS3cr3t!",
     key: "a3f8d9e112c04b7af1c3e8b92d057a4e",
   },
+  links: [
+    {
+      label: "github.com/antoinekh/network-secret",
+      url: "https://github.com/antoinekh/network-secret",
+      note: "Python library & CLI.",
+    },
+  ],
   encode,
   decode,
 };
