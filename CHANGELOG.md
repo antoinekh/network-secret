@@ -11,7 +11,7 @@ All notable changes to this project are documented here. This covers both the Py
 - Cisco IOS type 8 (`network_secret.cisco_type8`, `cisco-type8`): a one-way PBKDF2-HMAC-SHA256 password hash, 20000 iterations. Closes #4.
 - Cisco IOS type 9 (`network_secret.cisco_type9`, `cisco-type9`): a one-way scrypt password hash, N=16384 r=1 p=1. Closes #4.
 - All four are verified against Cisco's own published test vectors, in both the Python package and the website.
-- The website navigation is grouped by vendor. Each vendor opens a menu of its formats, so the bar stays readable now that it lists eleven entries.
+- The website navigation is grouped by vendor. Each vendor opens a menu of its formats, so the bar stays readable now that it lists ten entries.
 - Cisco type 6 follows Cisco's C reference, which encrypts and authenticates the secret's trailing NUL byte. The `encode6.py` script Cisco publishes beside it omits that byte, so it round-trips against itself but does not reproduce device output.
 - A header link to the source repository, beside the theme toggle.
 - The converter's Hash and Verify tabs for one-way formats, and the one-way badges on the catalogue card and the format page.
