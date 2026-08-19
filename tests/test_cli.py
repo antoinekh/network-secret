@@ -84,11 +84,6 @@ def test_check_output_format(capsys):
     assert "Match     : YES" in out
 
 
-import pytest
-
-from network_secret.cli import main
-
-
 def test_list_shows_all_seven(capsys):
     assert main(["--list"]) == 0
     out = capsys.readouterr().out

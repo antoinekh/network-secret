@@ -34,9 +34,6 @@ def test_operations_wired():
 
 import pytest
 
-from network_secret.registry import REGISTRY, find
-from network_secret.types import KeyKind
-
 CISCO_IDS = ["cisco-type6", "cisco-type7", "cisco-type8", "cisco-type9"]
 
 
