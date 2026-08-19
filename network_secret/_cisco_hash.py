@@ -65,17 +65,17 @@ def validate_salt(salt: str) -> str:
     return salt
 
 
-def format_hash(type_number: int, salt: str, digest: bytes) -> str:
-    """Assemble a "$N$salt$hash" string."""
-    return f"${type_number}${salt}${encode_digest(digest)}"
+def format_hash(magic: str, salt: str, digest: bytes) -> str:
+    """Assemble a "$N$salt$hash" string from a magic prefix like "$8$"."""
+    return f"{magic}{salt}${encode_digest(digest)}"
 
 
-def parse_hash(value: str, type_number: int) -> tuple[str, str]:
+def parse_hash(value: str, magic: str) -> tuple[str, str]:
     """Split a "$N$salt$hash" value into (salt, encoded_hash).
 
-    Raises ValueError when the value is not a hash of this type.
+    Raises ValueError when the value does not start with `magic`.
     """
-    magic = f"${type_number}$"
+    type_number = magic.strip("$")
     text = value.strip()
     if not text.startswith(magic):
         raise ValueError(
@@ -100,16 +100,16 @@ def parse_hash(value: str, type_number: int) -> tuple[str, str]:
 
 
 def hash_password(
-    password: str, kdf: Kdf, type_number: int, salt: str | None = None
+    password: str, kdf: Kdf, magic: str, salt: str | None = None
 ) -> str:
     """Hash `password` and return the full "$N$salt$hash" string."""
     salt = generate_salt() if salt is None else validate_salt(salt)
     digest = kdf(password.encode("utf-8"), salt.encode("ascii"))
-    return format_hash(type_number, salt, digest)
+    return format_hash(magic, salt, digest)
 
 
 def verify(
-    hash_value: str, password: str, kdf: Kdf, type_number: int
+    hash_value: str, password: str, kdf: Kdf, magic: str
 ) -> tuple[str, str, bool]:
     """Recompute `hash_value` from `password` and compare.
 
@@ -117,14 +117,15 @@ def verify(
     in the hash field. Returns (given, recomputed, match), which matches the
     Cipher.check contract.
     """
-    salt, _encoded = parse_hash(hash_value, type_number)
-    recomputed = hash_password(password, kdf, type_number, salt)
+    salt, _encoded = parse_hash(hash_value, magic)
+    recomputed = hash_password(password, kdf, magic, salt)
     given = hash_value.strip()
     return given, recomputed, hmac.compare_digest(given, recomputed)
 
 
-def one_way_error(type_number: int) -> ValueError:
+def one_way_error(magic: str) -> ValueError:
     """The error every one-way format raises from decrypt()."""
+    type_number = magic.strip("$")
     return ValueError(
         f"Cisco type {type_number} is a one-way hash and cannot be decrypted. "
         f"Use --check to test a password against it."

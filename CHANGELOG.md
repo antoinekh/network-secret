@@ -30,6 +30,7 @@ All notable changes to this project are documented here. This covers both the Py
 - The environment-variable constants (`ENV_MASTER`, `ENV_KEY`, `ENV_MASTER_KEY`) are now exported consistently from `__all__` in all three keyed modules (`juniper8`, `nokia_sros_custom_hash`, `cisco_type6`), instead of only the last one.
 - On a narrow screen, hovering a vendor name in the site nav opened its menu, but moving the pointer down toward an item closed it again before it could be clicked. The gap between the trigger and the menu is now bridged so the pointer never leaves the hoverable area.
 - The Python base41 encoder for Cisco type 6, `_b41_encode`, returned `"AAB"` for empty input, while the website's `b41Encode` raised `Error("Nothing to encode")`. Python now raises `ValueError("Nothing to encode")` too, matching the website's wording. Unreachable from the public API today, since `encrypt` always passes at least 13 bytes.
+- `cisco_type8` and `cisco_type9` each defined a `MAGIC` constant that was never read: `_cisco_hash` rebuilt the same `$8$`/`$9$` prefix from a separate `type_number` argument, duplicating the same fact in two places. `_cisco_hash.format_hash`, `parse_hash`, `hash_password`, `verify` and `one_way_error` now take the `magic` prefix directly, so `MAGIC` is the single source of it and the modules match the `MAGIC` convention already used by `juniper8`/`juniper9`. Output is byte-identical, confirmed against the known-answer vectors.
 
 ## v0.1.1 - 2026-07-23
 

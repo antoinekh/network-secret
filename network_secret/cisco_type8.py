@@ -25,7 +25,6 @@ from . import _cisco_hash
 __all__ = ["decrypt", "encrypt", "check"]
 
 MAGIC = "$8$"
-TYPE_NUMBER = 8
 ITERATIONS = 20000
 
 
@@ -42,12 +41,12 @@ def encrypt(plaintext: str, salt: str | None = None) -> str:
     so the same password produces a different hash each time. Pass `salt`
     only to reproduce a known value, as the tests do.
     """
-    return _cisco_hash.hash_password(plaintext, _kdf, TYPE_NUMBER, salt)
+    return _cisco_hash.hash_password(plaintext, _kdf, MAGIC, salt)
 
 
 def decrypt(ciphertext: str) -> str:
     """Always raises: type 8 is a one-way hash, not a reversible cipher."""
-    raise _cisco_hash.one_way_error(TYPE_NUMBER)
+    raise _cisco_hash.one_way_error(MAGIC)
 
 
 def check(ciphertext: str, other: str) -> tuple[str, str, bool]:
@@ -56,4 +55,4 @@ def check(ciphertext: str, other: str) -> tuple[str, str, bool]:
     The salt is taken from `ciphertext`, so an equal password reproduces the
     whole string. Returns (given, recomputed, match).
     """
-    return _cisco_hash.verify(ciphertext, other, _kdf, TYPE_NUMBER)
+    return _cisco_hash.verify(ciphertext, other, _kdf, MAGIC)
