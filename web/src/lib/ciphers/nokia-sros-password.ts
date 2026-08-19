@@ -66,8 +66,13 @@ function splitPrefix(text: string): { tag: string; remainder: string } {
 }
 
 function validateCost(cost: string): void {
-  if (!/^\d+$/.test(cost)) {
-    throw new Error(`bcrypt cost must be numeric: ${JSON.stringify(cost)}`);
+  if (!/^\d{2}$/.test(cost)) {
+    // A JS regex `\d` (without the `u` flag and `\p{Nd}`) matches only ASCII
+    // 0-9, not other Unicode digits (e.g. full-width "４"), which `Number()`
+    // would otherwise parse inconsistently. Real bcrypt always zero-pads the
+    // cost to two digits, so anything else - one digit, three digits, a
+    // non-digit - is a malformed value, not just an unusual one.
+    throw new Error(`bcrypt cost must be exactly two digits: '${cost}'`);
   }
   const value = Number(cost);
   if (value < MIN_COST || value > MAX_COST) {

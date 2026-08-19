@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import { describe, expect, it } from "vitest";
 import { nokiaSrosPassword } from "./nokia-sros-password";
 
@@ -59,16 +60,41 @@ describe("nokia sros password", () => {
     );
   });
 
-  it("rejects an out-of-range cost quickly, before ever calling into bcryptjs", async () => {
-    // Cost 31 takes on the order of hundreds of hours to actually hash (bcrypt's
-    // cost is an exponent). If a future refactor moved the range check after the
-    // call into bcryptjs, this test would hang instead of failing fast, so the
-    // timing assertion is the point, not just rejects.toThrow.
-    const value = "$2y$31$jBwKMP7r.vf4x1tbThl7Y.iBIgdDpv8WZ4DTgrnNIZdJS97NUorVe";
-    const started = performance.now();
+  it.each([17, 31])(
+    "rejects a cost of %i (above MAX_COST) quickly, before ever calling into bcryptjs",
+    async (cost) => {
+      // Cost 31 takes on the order of hundreds of hours to actually hash (bcrypt's
+      // cost is an exponent). If a future refactor moved the range check after the
+      // call into bcryptjs, this test would hang instead of failing fast, so the
+      // timing assertion is the point, not just rejects.toThrow.
+      const value = `$2y$${cost}$jBwKMP7r.vf4x1tbThl7Y.iBIgdDpv8WZ4DTgrnNIZdJS97NUorVe`;
+      const started = performance.now();
+      await expect(nokiaSrosPassword.verify!(value, VECTOR_PASSWORD)).rejects.toThrow(
+        new RegExp(`bcrypt cost out of range \\(4-16\\): ${cost}`),
+      );
+      expect(performance.now() - started).toBeLessThan(500);
+    },
+  );
+
+  it.each([
+    "$2y$4$jBwKMP7r.vf4x1tbThl7Y.iBIgdDpv8WZ4DTgrnNIZdJS97NUorVe", // one digit
+    "$2y$004$jBwKMP7r.vf4x1tbThl7Y.iBIgdDpv8WZ4DTgrnNIZdJS97NUorVe", // three digits
+    "$2y$1a$jBwKMP7r.vf4x1tbThl7Y.iBIgdDpv8WZ4DTgrnNIZdJS97NUorVe", // not both digits
+    "$2y$$jBwKMP7r.vf4x1tbThl7Y.iBIgdDpv8WZ4DTgrnNIZdJS97NUorVe", // empty cost field
+  ])("rejects a cost that is not exactly two digits: %j", async (value) => {
+    // Real bcrypt always zero-pads the cost to two digits, so an unpadded or
+    // over-padded cost is a malformed value, not just a low- or high-cost one.
     await expect(nokiaSrosPassword.verify!(value, VECTOR_PASSWORD)).rejects.toThrow(
-      /bcrypt cost out of range \(4-16\): 31/,
+      /exactly two digits/,
     );
-    expect(performance.now() - started).toBeLessThan(500);
+  });
+
+  it("still accepts a genuine zero-padded low cost", async () => {
+    // "$2y$04$..." is what real bcrypt actually emits for cost 4 (MIN_COST);
+    // the two-digit requirement must not narrow what real bcrypt produces.
+    const salt = "$2y$04$jBwKMP7r.vf4x1tbThl7Y.";
+    const hash = await bcrypt.hash(VECTOR_PASSWORD, salt);
+    expect(hash.startsWith("$2y$04$")).toBe(true);
+    expect(await nokiaSrosPassword.verify!(hash, VECTOR_PASSWORD)).toBe(true);
   });
 });

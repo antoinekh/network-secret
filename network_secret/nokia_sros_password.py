@@ -65,8 +65,12 @@ def _split_prefix(text: str) -> tuple[str, str]:
 
 
 def _validate_cost(cost: str) -> None:
-    if not cost.isdigit():
-        raise ValueError(f"bcrypt cost must be numeric: {cost!r}")
+    if not (len(cost) == 2 and cost.isascii() and cost.isdigit()):
+        # str.isdigit() is True for non-ASCII digits (e.g. superscript "²") that
+        # int() cannot parse; require plain ASCII digits. Real bcrypt always
+        # zero-pads the cost to two digits, so anything else - one digit, three
+        # digits, a non-digit - is a malformed value, not just an unusual one.
+        raise ValueError(f"bcrypt cost must be exactly two digits: '{cost}'")
     value = int(cost)
     if not (MIN_COST <= value <= MAX_COST):
         raise ValueError(

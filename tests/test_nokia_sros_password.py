@@ -150,3 +150,29 @@ def test_cost_out_of_range_error_names_the_accepted_range():
         ValueError, match=f"{nokia.MIN_COST}-{nokia.MAX_COST}"
     ):
         nokia.encrypt(VECTOR_PASSWORD, salt="$2y$99$jBwKMP7r.vf4x1tbThl7Y.")
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "$2y$4$jBwKMP7r.vf4x1tbThl7Y.iBIgdDpv8WZ4DTgrnNIZdJS97NUorVe",  # one digit
+        "$2y$004$jBwKMP7r.vf4x1tbThl7Y.iBIgdDpv8WZ4DTgrnNIZdJS97NUorVe",  # three digits
+        "$2y$1a$jBwKMP7r.vf4x1tbThl7Y.iBIgdDpv8WZ4DTgrnNIZdJS97NUorVe",  # not both digits
+        "$2y$$jBwKMP7r.vf4x1tbThl7Y.iBIgdDpv8WZ4DTgrnNIZdJS97NUorVe",  # empty cost field
+    ],
+)
+def test_check_rejects_cost_that_is_not_exactly_two_digits(value):
+    """Real bcrypt always zero-pads the cost to two digits, so an unpadded or
+    over-padded cost is a malformed value, not just a low- or high-cost one.
+    """
+    with pytest.raises(ValueError, match="exactly two digits"):
+        nokia.check(value, VECTOR_PASSWORD)
+
+
+def test_cost_zero_padded_to_two_digits_is_still_accepted():
+    """A genuine two-digit, zero-padded low cost (e.g. "04") remains legal:
+    the two-digit requirement must not narrow what real bcrypt produces.
+    """
+    value = nokia.encrypt(VECTOR_PASSWORD, salt="$2y$04$jBwKMP7r.vf4x1tbThl7Y.")
+    assert value.startswith("$2y$04$")
+    assert nokia.check(value, VECTOR_PASSWORD)[2] is True
