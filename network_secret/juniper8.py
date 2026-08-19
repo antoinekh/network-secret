@@ -37,7 +37,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.hashes import SHA256
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-__all__ = ["decrypt", "encrypt", "check"]
+__all__ = ["decrypt", "encrypt", "check", "ENV_MASTER"]
 
 MAGIC = "$8$"
 

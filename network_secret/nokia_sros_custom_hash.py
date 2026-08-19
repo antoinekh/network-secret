@@ -26,7 +26,7 @@ import binascii
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.padding import PKCS7
 
-__all__ = ["encrypt", "decrypt", "check"]
+__all__ = ["encrypt", "decrypt", "check", "ENV_KEY"]
 
 SUFFIX = "custom"
 # Environment variable the CLI reads the shared key from when -k/--key is absent.
