@@ -27,6 +27,10 @@
   let result = $state<{ ok: boolean; value: string } | null>(null);
 
   // A one-way cipher starts on Hash; everything else starts on Decode.
+  // This only resets `mode`: it relies on App.svelte mounting this component
+  // under {#key routeKey}, which remounts it on every route change so
+  // `input`, `candidate` and `key` also start fresh. If Converter is ever
+  // reused without that wrapper, those fields will need resetting here too.
   $effect(() => {
     if (!modes.includes(mode)) {
       mode = modes[0];
