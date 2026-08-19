@@ -4,9 +4,26 @@ All notable changes to this project are documented here. This covers both the Py
 
 ## Unreleased
 
+### Added
+
+- Cisco IOS type 6 (`network_secret.cisco_type6`, `cisco-type6`): reversible AES with an HMAC-SHA1 tag, keyed by the device master key, base41 armoured. Closes #2.
+- Cisco IOS type 7 (`network_secret.cisco_type7`, `cisco-type7`): the legacy keyless XOR obfuscation. Closes #3.
+- Cisco IOS type 8 (`network_secret.cisco_type8`, `cisco-type8`): a one-way PBKDF2-HMAC-SHA256 password hash, 20000 iterations. Closes #4.
+- Cisco IOS type 9 (`network_secret.cisco_type9`, `cisco-type9`): a one-way scrypt password hash, N=16384 r=1 p=1. Closes #4.
+- All four are verified against Cisco's own published test vectors, in both the Python package and the website.
+- The website navigation is grouped by vendor. Each vendor opens a menu of its formats, so the bar stays readable now that it lists eleven entries.
+- Cisco type 6 follows Cisco's C reference, which encrypts and authenticates the secret's trailing NUL byte. The `encode6.py` script Cisco publishes beside it omits that byte, so it round-trips against itself but does not reproduce device output.
+
 ### Changed
 
 - Rebranded the Juniper vendor name to **Juniper/HPE** across the docs and website, following HPE's acquisition of Juniper. The code API (module names, CLI subcommands, URLs, env vars) is unchanged.
+
+### Fixed
+
+- The CLI resolved a cipher's key environment variable by key kind, not by cipher. A second master-password cipher would have read `JUNOS_MASTER_PASSWORD`. Each registry entry now declares its own variable, so Cisco type 6 correctly reads `CISCO_MASTER_KEY`.
+- The `--list` vendor column was 8 characters wide, so `Juniper/HPE` overflowed it. It is now 12.
+- The website's Juniper/HPE `$9$` and `$8$` pages linked to the superseded `juniper9-crypt` and `juniper8-crypt` repositories. They now link to `network-secret`, and every format page carries the link.
+- The lockfile recorded a stale project version: v0.1.1 bumped `pyproject.toml` but `uv.lock` still read 0.1.0. Refreshed it to match.
 
 ## v0.1.1 - 2026-07-23
 
