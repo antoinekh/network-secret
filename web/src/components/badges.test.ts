@@ -23,4 +23,10 @@ describe("catalogue badges", () => {
       ).toBe(true);
     }
   });
+
+  it("names every vendor in the catalogue exactly once", () => {
+    const vendors = [...new Set(catalogue.map((c) => c.vendor))];
+    expect(vendors).toEqual(["Juniper/HPE", "Nokia SR OS", "Cisco IOS"]);
+    expect(new Set(vendors).size).toBe(vendors.length);
+  });
 });
