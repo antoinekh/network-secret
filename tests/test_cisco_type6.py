@@ -55,6 +55,21 @@ def test_round_trip(plaintext):
     assert cisco_type6.decrypt(value, "MyMaster") == plaintext
 
 
+def test_round_trip_plaintext_ending_in_nul():
+    value = cisco_type6.encrypt("x\x00", "MyMaster")
+    assert cisco_type6.decrypt(value, "MyMaster") == "x\x00"
+
+
+def test_round_trip_plaintext_that_is_a_single_nul():
+    value = cisco_type6.encrypt("\x00", "MyMaster")
+    assert cisco_type6.decrypt(value, "MyMaster") == "\x00"
+
+
+def test_round_trip_plaintext_with_an_interior_nul():
+    value = cisco_type6.encrypt("a\x00b", "MyMaster")
+    assert cisco_type6.decrypt(value, "MyMaster") == "a\x00b"
+
+
 def test_decrypt_rejects_the_wrong_master_key():
     with pytest.raises(ValueError, match="Authentication failed"):
         cisco_type6.decrypt(VECTOR_VALUE, "not-the-master-key")

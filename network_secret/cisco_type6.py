@@ -177,9 +177,14 @@ def decrypt(ciphertext: str, master_key: str) -> str:
             "Authentication failed: wrong master key, or the value was not "
             "produced by this scheme"
         )
-    plaintext = _keystream_xor(ke, body).rstrip(b"\x00")
+    decrypted = _keystream_xor(ke, body)
+    # encrypt() appends exactly one NUL, so remove exactly one. rstrip() would
+    # eat a NUL that is genuinely part of the plaintext, and an unconditional
+    # slice would chop a real byte off a value written without the terminator.
+    if decrypted.endswith(b"\x00"):
+        decrypted = decrypted[:-1]
     try:
-        return plaintext.decode("utf-8")
+        return decrypted.decode("utf-8")
     except UnicodeDecodeError as e:
         raise ValueError(
             "Decryption produced invalid UTF-8: wrong master key, or a corrupt value"
