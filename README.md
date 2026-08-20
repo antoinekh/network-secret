@@ -69,13 +69,17 @@ plain_a, plain_b, match = juniper8.check(cipher8, "BGPsecret1", master)
 
 # Juniper/HPE JUNOS encrypted-password (Unix SHA-crypt, one-way)
 hash_jep = juniper_encrypted_password.encrypt("lab123")
-# '$6$OxsofBL3v2.ckv5z$6cnGooSbcNVCY44cBYiK7Kh.5q.TSZm/71tQMzXc/55aHCY0muFlu7fwjpUlRYd8XjxKlYv4LP.yIMBl2ntOn0' (a fresh salt every call, always starting '$6$')
+# '$6$OxsofBL3v2.ckv5z$6cnGooSbcNVCY44cBYiK7Kh.5q.TSZm/71tQMzXc/55aHCY0muFlu7fwjpUlRYd8XjxKlYv4LP.yIMBl2ntOn0' (a fresh salt every call, always starting '$6$', the default variant)
+hash_jep_sha256 = juniper_encrypted_password.encrypt("lab123", variant="sha256")
+# '$5$9DQNhbbsWrky5BZ3$rfUMEf2WdGxGFHdPem4Z/Rj9hGOQKKbVcyuJ2H98eBA' (variant="sha256" produces "$5$" instead; VARIANTS is ("sha512", "sha256"), first entry is the default)
 given, recomputed, match = juniper_encrypted_password.check(
     "$5$itHMToxg$IAeDKDuWsSCoL2W7fognCW8cyNj4YE9ZhDvCoWFC5y/", "lab123"
 )
 # match is True
 juniper_encrypted_password.decrypt(hash_jep)
 # ValueError: JUNOS encrypted-password values are a one-way SHA-crypt hash and cannot be decrypted. Use --check to test a password against one.
+juniper_encrypted_password.encrypt("lab123", salt="$5$abcdefgh", variant="sha512")
+# ValueError: variant='sha512' conflicts with salt='$5$abcdefgh': the salt's '$5$' prefix names a different format than variant 'sha512' ('$6$'); pass matching values, or only one of them
 
 # Nokia SR OS custom-hash (16/24/32-character shared key)
 key = "a3f8d9e112c04b7af1c3e8b92d057a4e"
@@ -158,7 +162,7 @@ network-secret juniper8 --decrypt '$8$aes256-gcm$...'
 
 ### Juniper/HPE JUNOS encrypted-password (`$5$`/`$6$`, one-way)
 
-JUNOS stores local user passwords as standard Unix SHA-crypt, written in config as `encrypted-password "$5$salt$hash"; ## SECRET-DATA` (`$5$` is sha256-crypt, `$6$` is sha512-crypt). There is nothing to decrypt, so `--encrypt` hashes with a fresh random salt (always `$6$`, matching current JUNOS) and `--check` verifies a candidate password by reusing the salt, variant, and round count carried in the value you give it. `$1$` (md5crypt), which older JUNOS wrote, is deliberately not supported and is rejected by name.
+JUNOS stores local user passwords as standard Unix SHA-crypt, written in config as `encrypted-password "$5$salt$hash"; ## SECRET-DATA` (`$5$` is sha256-crypt, `$6$` is sha512-crypt). There is nothing to decrypt, so `--encrypt` hashes with a fresh random salt and `--check` verifies a candidate password by reusing the salt, variant, and round count carried in the value you give it. `$1$` (md5crypt), which older JUNOS wrote, is deliberately not supported and is rejected by name.
 
 ```bash
 network-secret juniper-encrypted-password --encrypt 'lab123'
@@ -172,6 +176,19 @@ You can paste the value straight out of a JUNOS config, quotes, trailing `;` and
 
 ```bash
 network-secret juniper-encrypted-password --check '"$5$itHMToxg$IAeDKDuWsSCoL2W7fognCW8cyNj4YE9ZhDvCoWFC5y/"; ## SECRET-DATA' 'lab123'
+```
+
+`--encrypt` picks the hash variant with `--variant {sha512,sha256}`, defaulting to `sha512` (`$6$`), which is what current JUNOS writes when `set system login password format sha512` is configured; `--variant sha256` instead produces what `set system login password format sha256` writes (`$5$`). This is a convenience for matching a device's existing style, not a correctness requirement: JUNOS `encrypted-password` accepts any crypt hash you paste regardless of the device's `password format` setting, which only governs what the device itself generates from a plaintext. A `$6$` hash produced here (or by any other tool) works on a device set to `sha256` just as well, and vice versa. `--variant` is only offered where it means something: it appears on `--encrypt`, and is silently ignored if given alongside `--check` or `--decrypt`, since neither of those picks a format to produce.
+
+```bash
+network-secret juniper-encrypted-password --encrypt 'lab123'
+# $6$0W8cbt0LJgH4mTP/$sXjncyJQo/Hb0FLhvkcBota5gC6av4gUv2Vq2WmbHfMU1Q1mp47yqi5Oti8dNc9VPdjZaVRXOAn7AvqpwcCA/0
+
+network-secret juniper-encrypted-password --variant sha256 --encrypt 'lab123'
+# $5$wzkCmB9LIq8jselM$oTZKwaa/N7jImALIYZDkZ0inUPBIUGvRmXa1PUbKas5
+
+network-secret juniper-encrypted-password --variant sha512 --encrypt 'lab123'
+# $6$.ZENYvk9UOOJ.jkp$Oyxb6dC0wSym6yjjVbMcifgEABK4xhGRqTbF1WqzJtizGMJymEvfspjhomkvwS4ZwUNitqRWY4/A0QV7dgM7Q/
 ```
 
 Rounds are bounded to 1000-100000 (`MIN_ROUNDS`/`MAX_ROUNDS` in `network_secret/juniper_encrypted_password.py`). Drepper's SHA-crypt spec permits a `rounds=N$` field up to 999,999,999, read from the value being checked, and JUNOS itself never emits anything but its 5000 default; without this bound a pasted hash could force arbitrarily expensive work and hang the tool, the same reasoning behind `juniper8`'s PBKDF2 iteration bound and the Nokia `$2y$` format's bcrypt cost bound.

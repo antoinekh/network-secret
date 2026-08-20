@@ -85,6 +85,7 @@ The catalogue holds two kinds of entry: **converters** (interactive `Cipher` mod
 2. Add it to the `ciphers` array in `src/lib/ciphers/registry.ts`.
 3. Add `src/lib/ciphers/<id>.test.ts` with known-answer vectors and a round-trip test.
 4. For a one-way hash, set `oneWay: true` and implement `verify(encoded, plaintext)` alongside `encode`; `decode` must still exist and must throw. `Converter` then shows Hash and Verify tabs instead of Decode and Encode.
+5. For a format with more than one output variant (e.g. `$5$`/`$6$` SHA-crypt), set `variants` to the list of `{ value, label }` choices, first entry the default, and accept `variant?: string` as `encode`'s third parameter. `Converter` then renders a selector in Hash/Encode mode and passes the chosen value through.
 
 The home card, the `/<id>` page, and the header's vendor menu entry all appear automatically. An entry can also be marked `status: "planned"` to show as a teaser before its `encode`/`decode` are implemented.
 
