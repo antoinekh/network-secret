@@ -6,6 +6,7 @@ import {
   MAX_ROUNDS,
   MIN_ROUNDS,
   SECRET_DATA_MARKER,
+  VARIANTS,
   decode,
   encode,
   encryptWithSalt,
@@ -53,6 +54,76 @@ describe("juniper encrypted-password: encode()", () => {
     expect(a).not.toBe(b);
     expect(a.startsWith(MAGIC_SHA512)).toBe(true);
     expect(b.startsWith(MAGIC_SHA512)).toBe(true);
+  });
+});
+
+describe("juniper encrypted-password: variant parameter", () => {
+  // Mirrors tests/test_juniper_encrypted_password.py's "variant parameter"
+  // section: both suites check the same behaviour against the same rules.
+
+  it("encode with no variant emits $6$", async () => {
+    const value = await encode(VECTOR_PASSWORD);
+    expect(value.startsWith(MAGIC_SHA512)).toBe(true);
+  });
+
+  it("encode with variant sha256 emits $5$", async () => {
+    const value = await encode(VECTOR_PASSWORD, undefined, "sha256");
+    expect(value.startsWith(MAGIC_SHA256)).toBe(true);
+  });
+
+  it("encode with variant sha512 emits $6$", async () => {
+    const value = await encode(VECTOR_PASSWORD, undefined, "sha512");
+    expect(value.startsWith(MAGIC_SHA512)).toBe(true);
+  });
+
+  it("the sha256 variant with the owner's real salt reproduces the real device vector byte for byte", async () => {
+    const value = await encryptWithSalt(VECTOR_PASSWORD, "$5$itHMToxg", "sha256");
+    expect(value).toBe(VECTOR_SHA256);
+    expect(value).toBe("$5$itHMToxg$IAeDKDuWsSCoL2W7fognCW8cyNj4YE9ZhDvCoWFC5y/");
+  });
+
+  it("a variant agreeing with the salt's prefix is accepted", async () => {
+    const value = await encryptWithSalt(VECTOR_PASSWORD, "$6$abcdefgh", "sha512");
+    expect(value.startsWith("$6$abcdefgh$")).toBe(true);
+  });
+
+  it("a variant conflicting with the salt's prefix raises, naming both", async () => {
+    await expect(
+      encryptWithSalt(VECTOR_PASSWORD, "$5$abcdefgh", "sha512"),
+    ).rejects.toThrow(/sha512/);
+    try {
+      await encryptWithSalt(VECTOR_PASSWORD, "$5$abcdefgh", "sha512");
+      throw new Error("expected encryptWithSalt to throw");
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      expect(message).toContain("sha512");
+      expect(message).toContain("$5$abcdefgh");
+    }
+  });
+
+  it("a variant with an unprefixed salt selects the variant", async () => {
+    const value = await encryptWithSalt(VECTOR_PASSWORD, "abcdefgh", "sha256");
+    expect(value.startsWith("$5$abcdefgh$")).toBe(true);
+  });
+
+  it("an unknown variant raises", async () => {
+    await expect(encode(VECTOR_PASSWORD, undefined, "sha1")).rejects.toThrow(/sha1/);
+  });
+
+  it("VARIANTS defaults to sha512 first", () => {
+    expect(VARIANTS[0]).toBe("sha512");
+    expect(new Set(VARIANTS)).toEqual(new Set(["sha512", "sha256"]));
+  });
+});
+
+describe("juniper encrypted-password: catalogue entry declares variants", () => {
+  it("declares variants with $6$ sha512 first, so the default cannot silently flip", () => {
+    expect(juniperEncryptedPassword.variants).toBeDefined();
+    expect(juniperEncryptedPassword.variants?.[0]?.value).toBe("sha512");
+    expect(juniperEncryptedPassword.variants?.map((v) => v.value)).toEqual([
+      "sha512",
+      "sha256",
+    ]);
   });
 });
 

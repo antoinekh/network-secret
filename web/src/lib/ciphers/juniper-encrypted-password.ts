@@ -46,6 +46,15 @@ export const MAGIC_SHA256 = "$5$";
 export const MAGIC_SHA512 = "$6$";
 const MAGIC_MD5 = "$1$"; // explicitly unsupported; named in its own error below
 
+// Variant names accepted by encode()'s/encryptWithSalt()'s `variant`
+// argument. First entry is the default: JUNOS currently writes $6$, so
+// sha512 stays the default here too. Mirrors Python's VARIANTS exactly.
+export const VARIANTS = ["sha512", "sha256"] as const;
+const VARIANT_MAGIC: Record<string, string> = {
+  sha512: MAGIC_SHA512,
+  sha256: MAGIC_SHA256,
+};
+
 export const DEFAULT_ROUNDS = 5000;
 // Drepper's spec allows 1000-999999999. The upper end is read from whatever
 // value is being verified, so it must be bounded well below the spec's own
@@ -294,6 +303,15 @@ function format(
   return `${magic}${roundsField}${salt}$${encoded}`;
 }
 
+/** Resolve a `variant` argument to its magic prefix; throw naming it otherwise. */
+function variantMagic(variant: string): string {
+  const magic = VARIANT_MAGIC[variant];
+  if (!magic) {
+    throw new Error(`Unknown variant '${variant}': expected one of ${JSON.stringify(VARIANTS)}`);
+  }
+  return magic;
+}
+
 /** Compare two strings without short-circuiting on the first difference. */
 function timingSafeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
@@ -305,23 +323,85 @@ function timingSafeEqual(a: string, b: string): boolean {
 }
 
 /**
- * Hash `plaintext` into a JUNOS encrypted-password value, mirroring Python's
- * `encrypt(plaintext, salt=...)` called with no `salt` argument: emits
- * "$6$" (sha512-crypt) since that is what current JUNOS writes, at
- * DEFAULT_ROUNDS, with a fresh random 16-character salt. Non-deterministic:
- * the same password produces a different hash each call.
+ * Shared core of `encode`/`encryptWithSalt`, mirroring Python's
+ * `encrypt(plaintext, salt=..., variant=...)` exactly, including its
+ * reconciliation rule:
+ *
+ * - `saltArg` omitted: a fresh random salt is drawn, and `variant` (or the
+ *   "$6$" default) freely selects the format.
+ * - `saltArg` given with no "$5$"/"$6$" prefix (a bare salt, or a bare
+ *   "rounds=N$salt"): `variant` (or the "$6$" default) freely selects the
+ *   format.
+ * - `saltArg` given WITH a "$5$"/"$6$" prefix and `variant` also given: they
+ *   must agree, or this throws naming both, rather than letting one
+ *   silently win.
  */
-export async function encode(plaintext: string): Promise<string> {
-  const salt = generateSalt();
-  const encoded = await compute(MAGIC_SHA512, plaintext, salt, DEFAULT_ROUNDS);
-  return format(MAGIC_SHA512, null, salt, encoded);
+async function encryptCore(
+  plaintext: string,
+  saltArg: string | undefined,
+  variant: string | undefined,
+): Promise<string> {
+  const variantMagicValue = variant !== undefined ? variantMagic(variant) : undefined;
+
+  let magic: string;
+  let rounds: number;
+  let roundsRaw: string | null;
+  let saltChars: string;
+  if (saltArg === undefined) {
+    magic = variantMagicValue ?? MAGIC_SHA512;
+    rounds = DEFAULT_ROUNDS;
+    roundsRaw = null;
+    saltChars = generateSalt();
+  } else {
+    ({ magic, rounds, roundsRaw, salt: saltChars } = parseSaltArg(saltArg));
+    const saltHasPrefix = saltArg.trim().startsWith("$");
+    if (variantMagicValue !== undefined) {
+      if (saltHasPrefix && magic !== variantMagicValue) {
+        throw new Error(
+          `variant '${variant}' conflicts with salt '${saltArg}': the salt's ` +
+            `'${magic}' prefix names a different format than variant '${variant}' ` +
+            `('${variantMagicValue}'); pass matching values, or only one of them`,
+        );
+      }
+      magic = variantMagicValue;
+    }
+  }
+  // Canonical digits only: a freshly minted value must not inherit a
+  // non-canonical rounds= field (e.g. leading zeros) from the salt
+  // argument. See `format`'s docstring.
+  const roundsDisplay = roundsRaw !== null ? String(rounds) : null;
+  const encoded = await compute(magic, plaintext, saltChars, rounds);
+  return format(magic, roundsDisplay, saltChars, encoded);
 }
 
 /**
- * Mirrors Python's `encrypt(plaintext, salt=...)` with an explicit `salt`
- * argument. See `parseSaltArg` for the accepted forms. Exported (but not
- * part of the `Cipher` interface) so tests can exercise the "$5$" variant
- * and the "rounds=" form directly, the way the Python suite does.
+ * Hash `plaintext` into a JUNOS encrypted-password value, mirroring Python's
+ * `encrypt(plaintext, salt=None, variant=...)`: emits "$6$" (sha512-crypt) by
+ * default, since that is what current JUNOS writes when
+ * `set system login password format sha512` is configured; pass
+ * `variant: "sha256"` to instead produce what `format sha256` writes. Always
+ * draws a fresh random 16-character salt at DEFAULT_ROUNDS, so the same
+ * password produces a different hash each call.
+ *
+ * `key` is unused (this format is keyless) but kept as the second parameter
+ * so the positional signature matches the `Cipher.encode` contract exactly;
+ * `variant` is the third.
+ */
+export async function encode(
+  plaintext: string,
+  _key?: string,
+  variant?: string,
+): Promise<string> {
+  return encryptCore(plaintext, undefined, variant);
+}
+
+/**
+ * Mirrors Python's `encrypt(plaintext, salt=..., variant=...)` with an
+ * explicit `salt` argument. See `parseSaltArg` for the accepted salt forms
+ * and `encryptCore` for the variant/salt reconciliation rule. Exported (but
+ * not part of the `Cipher` interface) so tests can exercise the "$5$"
+ * variant, the "rounds=" form, and salt/variant reconciliation directly, the
+ * way the Python suite does.
  *
  * Canonicalises the rounds field: a "rounds=007000$..." argument produces
  * "rounds=7000$..." in the output. This is a freshly minted value, so it
@@ -330,11 +410,12 @@ export async function encode(plaintext: string): Promise<string> {
  * echoing back what the user pasted. See `format`'s docstring for the full
  * rationale (mirrors Python's `encrypt`/`check` split exactly).
  */
-export async function encryptWithSalt(plaintext: string, saltArg: string): Promise<string> {
-  const { magic, rounds, roundsRaw, salt } = parseSaltArg(saltArg);
-  const roundsDisplay = roundsRaw !== null ? String(rounds) : null;
-  const encoded = await compute(magic, plaintext, salt, rounds);
-  return format(magic, roundsDisplay, salt, encoded);
+export async function encryptWithSalt(
+  plaintext: string,
+  saltArg: string,
+  variant?: string,
+): Promise<string> {
+  return encryptCore(plaintext, saltArg, variant);
 }
 
 /** Always throws: encrypted-password is a one-way hash, not a cipher. */
@@ -388,6 +469,10 @@ export const juniperEncryptedPassword: Cipher = {
       url: "https://github.com/antoinekh/network-secret",
       note: "Python library & CLI.",
     },
+  ],
+  variants: [
+    { value: "sha512", label: "$6$ sha512" },
+    { value: "sha256", label: "$5$ sha256" },
   ],
   encode,
   decode,
