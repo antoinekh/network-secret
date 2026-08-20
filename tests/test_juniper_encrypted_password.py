@@ -65,6 +65,73 @@ def test_check_rejects_the_wrong_password():
     assert match is False
 
 
+# --- variant parameter ---------------------------------------------------
+
+
+def test_encrypt_with_no_variant_emits_sha512():
+    value = jep.encrypt(VECTOR_PASSWORD)
+    assert value.startswith(jep.MAGIC_SHA512)
+
+
+def test_encrypt_with_variant_sha256_emits_dollar5():
+    value = jep.encrypt(VECTOR_PASSWORD, variant="sha256")
+    assert value.startswith(jep.MAGIC_SHA256)
+
+
+def test_encrypt_with_variant_sha512_emits_dollar6():
+    value = jep.encrypt(VECTOR_PASSWORD, variant="sha512")
+    assert value.startswith(jep.MAGIC_SHA512)
+
+
+def test_encrypt_variant_reproduces_the_real_device_vector():
+    """The owner's real device value, reproduced via the explicit variant
+    parameter (rather than a $5$-prefixed salt), cross-checked against
+    openssl as an independent oracle."""
+    value = jep.encrypt(VECTOR_PASSWORD, salt="$5$itHMToxg", variant="sha256")
+    assert value == VECTOR_SHA256
+    assert value == "$5$itHMToxg$IAeDKDuWsSCoL2W7fognCW8cyNj4YE9ZhDvCoWFC5y/"
+
+
+@pytest.mark.skipif(not _HAVE_OPENSSL, reason="openssl is not available")
+def test_encrypt_variant_reproduces_the_real_device_vector_matches_openssl():
+    expected = _openssl_passwd("5", "itHMToxg", VECTOR_PASSWORD)
+    value = jep.encrypt(VECTOR_PASSWORD, salt="$5$itHMToxg", variant="sha256")
+    assert value == expected
+
+
+def test_variant_agreeing_with_salt_prefix_is_accepted():
+    value = jep.encrypt(VECTOR_PASSWORD, salt="$6$abcdefgh", variant="sha512")
+    assert value.startswith("$6$abcdefgh$")
+
+
+def test_variant_conflicting_with_salt_prefix_raises():
+    with pytest.raises(ValueError, match="variant"):
+        jep.encrypt(VECTOR_PASSWORD, salt="$5$abcdefgh", variant="sha512")
+
+
+def test_variant_conflicting_with_salt_prefix_error_names_both():
+    with pytest.raises(ValueError) as exc:
+        jep.encrypt(VECTOR_PASSWORD, salt="$5$abcdefgh", variant="sha512")
+    message = str(exc.value)
+    assert "sha512" in message
+    assert "$5$abcdefgh" in message
+
+
+def test_variant_with_unprefixed_salt_selects_the_variant():
+    value = jep.encrypt(VECTOR_PASSWORD, salt="abcdefgh", variant="sha256")
+    assert value.startswith("$5$abcdefgh$")
+
+
+def test_unknown_variant_raises():
+    with pytest.raises(ValueError, match="sha1"):
+        jep.encrypt(VECTOR_PASSWORD, variant="sha1")
+
+
+def test_variants_constant_default_is_sha512():
+    assert jep.VARIANTS[0] == "sha512"
+    assert set(jep.VARIANTS) == {"sha512", "sha256"}
+
+
 # --- Round trips and defaults --------------------------------------------
 
 

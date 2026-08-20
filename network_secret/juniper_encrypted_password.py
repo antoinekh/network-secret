@@ -29,7 +29,7 @@ juniper8.py's PBKDF2 iteration bound and nokia_sros_password.py's bcrypt
 cost bound.
 
 Public API:
-    encrypt(plaintext: str, salt: str | None = None) -> str
+    encrypt(plaintext: str, salt: str | None = None, variant: str | None = None) -> str
     decrypt(ciphertext: str) -> str            # always raises ValueError
     check(ciphertext: str, other: str) -> tuple[str, str, bool]
 """
@@ -50,11 +50,18 @@ __all__ = [
     "MIN_ROUNDS",
     "MAX_ROUNDS",
     "SECRET_DATA_MARKER",
+    "VARIANTS",
 ]
 
 MAGIC_SHA256 = "$5$"
 MAGIC_SHA512 = "$6$"
 _MAGIC_MD5 = "$1$"  # explicitly unsupported; named in its own error below
+
+# Variant names accepted by encrypt()'s `variant` argument (and, via the
+# registry, by the CLI's --variant flag). First entry is the default: JUNOS
+# currently writes $6$, so sha512 stays the default here too.
+VARIANTS = ("sha512", "sha256")
+_VARIANT_MAGIC = {"sha512": MAGIC_SHA512, "sha256": MAGIC_SHA256}
 
 DEFAULT_ROUNDS = 5000
 # Drepper's spec allows 1000-999999999. The upper end is read from whatever
@@ -269,34 +276,67 @@ def _format(magic: str, rounds_display: str | None, salt: str, encoded: str) -> 
     return f"{magic}{rounds_field}{salt}${encoded}"
 
 
-def encrypt(plaintext: str, salt: str | None = None) -> str:
+def _variant_magic(variant: str) -> str:
+    if variant not in _VARIANT_MAGIC:
+        raise ValueError(
+            f"Unknown variant {variant!r}: expected one of {VARIANTS}"
+        )
+    return _VARIANT_MAGIC[variant]
+
+
+def encrypt(plaintext: str, salt: str | None = None, variant: str | None = None) -> str:
     """Hash `plaintext` into a JUNOS encrypted-password value.
 
     Emits "$6$" (sha512-crypt) by default, since that is what current JUNOS
-    writes. Output is non-deterministic when `salt` is omitted: a fresh
-    random 16-character salt is drawn on every call, so the same password
-    produces a different hash each time.
+    writes when `set system login password format sha512` is configured;
+    pass variant="sha256" to instead produce what "format sha256" writes.
+    Output is non-deterministic when `salt` is omitted: a fresh random
+    16-character salt is drawn on every call, so the same password produces
+    a different hash each time.
 
     `salt` accepts:
       - a bare salt string, e.g. "abcdefgh" (up to 16 characters from the
-        crypt alphabet "./0-9A-Za-z"): hashed at DEFAULT_ROUNDS as "$6$".
-      - "rounds=N$abcdefgh": hashed at N rounds (MIN_ROUNDS-MAX_ROUNDS), as
-        "$6$", and the output carries the "rounds=N$" field. N is written
-        back in canonical decimal even if given with non-canonical leading
-        zeros (e.g. "rounds=007000" produces "rounds=7000" in the result):
-        a freshly minted value never inherits another tool's formatting,
+        crypt alphabet "./0-9A-Za-z"): hashed at DEFAULT_ROUNDS.
+      - "rounds=N$abcdefgh": hashed at N rounds (MIN_ROUNDS-MAX_ROUNDS), and
+        the output carries the "rounds=N$" field. N is written back in
+        canonical decimal even if given with non-canonical leading zeros
+        (e.g. "rounds=007000" produces "rounds=7000" in the result): a
+        freshly minted value never inherits another tool's formatting,
         matching `openssl passwd`'s own output.
       - either of the above prefixed with "$5$" or "$6$" to select the
-        variant instead of the "$6$" default, e.g. "$5$abcdefgh" or
-        "$5$rounds=10000$abcdefgh".
+        variant, e.g. "$5$abcdefgh" or "$5$rounds=10000$abcdefgh".
+
+    `variant` accepts "sha256" or "sha512" (see VARIANTS); None means the
+    module default (sha512, "$6$").
+
+    Reconciling `variant` with `salt`: a `salt` value may itself carry a
+    "$5$"/"$6$" prefix that names a variant. When `salt` has no such prefix
+    (a bare salt, or a bare "rounds=N$salt"), `variant` freely selects the
+    format. When `salt` DOES carry a "$5$"/"$6$" prefix and `variant` is
+    also given, they must agree - if they name different formats, this
+    raises ValueError naming both `variant` and `salt`, rather than letting
+    one silently win. A caller who wants no ambiguity should pass one or
+    the other, not both.
     """
+    if variant is not None:
+        variant_magic = _variant_magic(variant)
     if salt is None:
-        magic = MAGIC_SHA512
+        magic = variant_magic if variant is not None else MAGIC_SHA512
         rounds = DEFAULT_ROUNDS
         rounds_raw = None
         salt_chars = _sha_crypt.generate_salt()
     else:
         magic, rounds, rounds_raw, salt_chars = _parse_salt_arg(salt)
+        salt_has_prefix = salt.strip().startswith("$")
+        if variant is not None:
+            if salt_has_prefix and magic != variant_magic:
+                raise ValueError(
+                    f"variant={variant!r} conflicts with salt={salt!r}: "
+                    f"the salt's {magic!r} prefix names a different format "
+                    f"than variant {variant!r} ({variant_magic!r}); pass "
+                    "matching values, or only one of them"
+                )
+            magic = variant_magic
     # Canonical digits only: a freshly minted value must not inherit a
     # non-canonical rounds= field (e.g. leading zeros) from the salt
     # argument. See _format's docstring.

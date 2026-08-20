@@ -52,6 +52,7 @@ REGISTRY: list[Cipher] = [
         encrypt=juniper_encrypted_password.encrypt,
         decrypt=juniper_encrypted_password.decrypt,
         check=juniper_encrypted_password.check,
+        variants=juniper_encrypted_password.VARIANTS,
     ),
     Cipher(
         id="nokia-sros-custom-hash",
