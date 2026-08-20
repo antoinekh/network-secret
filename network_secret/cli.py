@@ -59,6 +59,11 @@ def _build_parser() -> argparse.ArgumentParser:
                     f"{cipher.env_var} or prompted for without echo."
                 ),
             )
+        if cipher.variants:
+            p.add_argument(
+                "--variant", choices=cipher.variants, default=cipher.variants[0],
+                help="Which variant to produce when encrypting (default: %(default)s).",
+            )
         group = p.add_mutually_exclusive_group(required=True)
         group.add_argument("--encrypt", metavar="PLAINTEXT", help="Encrypt a plaintext value")
         group.add_argument("--decrypt", metavar="CIPHERTEXT", help="Decrypt a secret value")
@@ -105,10 +110,14 @@ def main(argv: list[str] | None = None) -> int:
     cipher = find(args.cipher)
     assert cipher is not None  # argparse only allows registered ids
     key_args: tuple[str, ...] = (_resolve_key(cipher, args),) if cipher.keyed else ()
+    # --variant is meaningless for --decrypt/--check (it only selects the
+    # format encrypt() produces), so it is only ever passed on the encrypt
+    # path below, even though argparse accepts it alongside any operation.
+    encrypt_kwargs = {"variant": args.variant} if cipher.variants else {}
 
     try:
         if args.encrypt is not None:
-            print(cipher.encrypt(args.encrypt, *key_args))
+            print(cipher.encrypt(args.encrypt, *key_args, **encrypt_kwargs))
         elif args.decrypt is not None:
             print(cipher.decrypt(args.decrypt, *key_args))
         else:  # --check

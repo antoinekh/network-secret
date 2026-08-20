@@ -189,6 +189,32 @@ def test_juniper_encrypted_password_encrypt_defaults_to_sha512(capsys):
     assert out.startswith("$6$")
 
 
+def test_juniper_encrypted_password_variant_sha256_produces_dollar5_and_verifies(capsys):
+    assert main(
+        ["juniper-encrypted-password", "--variant", "sha256", "--encrypt", "hunter2"]
+    ) == 0
+    ct = capsys.readouterr().out.strip()
+    assert ct.startswith("$5$")
+    assert main(["juniper-encrypted-password", "--check", ct, "hunter2"]) == 0
+    assert "YES" in capsys.readouterr().out
+
+
+def test_juniper_encrypted_password_variant_sha512_produces_dollar6(capsys):
+    assert main(
+        ["juniper-encrypted-password", "--variant", "sha512", "--encrypt", "hunter2"]
+    ) == 0
+    out = capsys.readouterr().out.strip()
+    assert out.startswith("$6$")
+
+
+def test_variant_is_not_offered_for_a_format_with_no_variants():
+    """Pin the generic mechanism: cisco-type8 declares no variants, so
+    --variant must not be accepted for it."""
+    with pytest.raises(SystemExit) as exc:
+        main(["cisco-type8", "--variant", "sha256", "--encrypt", "hunter2"])
+    assert exc.value.code == 2
+
+
 def test_list_name_column_is_aligned(capsys):
     """Regression guard: a long id (e.g. juniper-encrypted-password) must not
     push its row's name column out of alignment with the other rows."""
