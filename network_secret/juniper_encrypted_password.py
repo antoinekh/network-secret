@@ -60,9 +60,10 @@ DEFAULT_ROUNDS = 5000
 # Drepper's spec allows 1000-999999999. The upper end is read from whatever
 # value is being checked, so it must be bounded well below the spec's own
 # maximum or a pasted hash can force minutes-to-hours of hashing (see the
-# module docstring). 100000 rounds is far above anything JUNOS emits (it
-# always uses the 5000 default) while staying near a second worst case -
-# measured cost is in the package report.
+# module docstring). Measured on a 2026 laptop: 5000 rounds (the JUNOS
+# default) is 0.003s, 50000 is 0.03s, 100000 (MAX_ROUNDS) is 0.055s for $5$
+# and 0.07s for $6$ - both far above anything JUNOS emits while keeping the
+# worst case well under a second, not near one.
 MIN_ROUNDS = 1000
 MAX_ROUNDS = 100_000
 
