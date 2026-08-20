@@ -23,8 +23,13 @@
   let candidate = $state("");
   let key = $state("");
   let showKey = $state(false);
+  let variant = $state("");
   let busy = $state(false);
   let result = $state<{ ok: boolean; value: string } | null>(null);
+
+  // The variant selector only makes sense while hashing: it picks the format
+  // encode() produces, and is meaningless for Decode/Verify.
+  const showVariant = $derived(mode === "encode" && cipher.variants !== undefined);
 
   // A one-way cipher starts on Hash; everything else starts on Decode.
   // This only resets `mode`: it relies on App.svelte mounting this component
@@ -35,6 +40,9 @@
     if (!modes.includes(mode)) {
       mode = modes[0];
       result = null;
+    }
+    if (cipher.variants && !cipher.variants.some((v) => v.value === variant)) {
+      variant = cipher.variants[0].value;
     }
   });
 
@@ -72,7 +80,8 @@
       } else if (mode === "decode") {
         result = { ok: true, value: await cipher.decode(unwrapValue(input), k) };
       } else {
-        result = { ok: true, value: await cipher.encode(input, k) };
+        const v = cipher.variants ? variant : undefined;
+        result = { ok: true, value: await cipher.encode(input, k, v) };
       }
     } catch (e) {
       result = { ok: false, value: e instanceof Error ? e.message : String(e) };
@@ -155,6 +164,17 @@
             aria-label={showKey ? "Hide key" : "Show key"}>{showKey ? "Hide" : "Show"}</button
           >
         </span>
+      </label>
+    {/if}
+
+    {#if showVariant}
+      <label class="field">
+        <span class="lab eyebrow">Variant</span>
+        <select class="mono in" bind:value={variant}>
+          {#each cipher.variants ?? [] as v (v.value)}
+            <option value={v.value}>{v.label}</option>
+          {/each}
+        </select>
       </label>
     {/if}
 
