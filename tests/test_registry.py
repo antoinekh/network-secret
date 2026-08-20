@@ -8,6 +8,7 @@ def test_registry_ids_and_order():
     assert [c.id for c in REGISTRY] == [
         "juniper9",
         "juniper8",
+        "juniper-encrypted-password",
         "nokia-sros-custom-hash",
         "nokia-sros-password",
         "cisco-type6",
@@ -43,8 +44,8 @@ def test_cisco_ciphers_are_registered(cipher_id):
     assert find(cipher_id) is not None
 
 
-def test_registry_holds_eight_ciphers():
-    assert len(REGISTRY) == 8
+def test_registry_holds_nine_ciphers():
+    assert len(REGISTRY) == 9
 
 
 def test_registry_ids_are_unique():
@@ -76,3 +77,15 @@ def test_one_way_ciphers_say_so_in_their_name():
 def test_one_way_ciphers_have_no_key():
     for cipher_id in ("cisco-type8", "cisco-type9"):
         assert find(cipher_id).key_kind is KeyKind.NONE
+
+
+def test_juniper_encrypted_password_declares_its_variants():
+    from network_secret import juniper_encrypted_password
+
+    assert find("juniper-encrypted-password").variants == juniper_encrypted_password.VARIANTS
+
+
+def test_other_ciphers_declare_no_variants():
+    for cipher in REGISTRY:
+        if cipher.id != "juniper-encrypted-password":
+            assert cipher.variants == (), f"{cipher.id} unexpectedly declares variants"

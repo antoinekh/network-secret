@@ -18,6 +18,7 @@ from . import (
     cisco_type9,
     juniper8,
     juniper9,
+    juniper_encrypted_password,
     nokia_sros_custom_hash,
     nokia_sros_password,
 )
@@ -42,6 +43,16 @@ REGISTRY: list[Cipher] = [
         decrypt=juniper8.decrypt,
         check=juniper8.check,
         env_var=juniper8.ENV_MASTER,
+    ),
+    Cipher(
+        id="juniper-encrypted-password",
+        vendor="Juniper/HPE",
+        name="Juniper/HPE encrypted-password (one-way)",
+        key_kind=KeyKind.NONE,
+        encrypt=juniper_encrypted_password.encrypt,
+        decrypt=juniper_encrypted_password.decrypt,
+        check=juniper_encrypted_password.check,
+        variants=juniper_encrypted_password.VARIANTS,
     ),
     Cipher(
         id="nokia-sros-custom-hash",

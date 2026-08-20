@@ -84,12 +84,13 @@ def test_check_output_format(capsys):
     assert "Match     : YES" in out
 
 
-def test_list_shows_all_eight(capsys):
+def test_list_shows_all_nine(capsys):
     assert main(["--list"]) == 0
     out = capsys.readouterr().out
     for cipher_id in (
         "juniper9",
         "juniper8",
+        "juniper-encrypted-password",
         "nokia-sros-custom-hash",
         "nokia-sros-password",
         "cisco-type6",
@@ -150,3 +151,74 @@ def test_type8_check_mismatches():
 def test_type9_decrypt_reports_one_way(capsys):
     assert main(["cisco-type9", "--decrypt", "$9$abc$def"]) == 2
     assert "one-way" in capsys.readouterr().err
+
+
+def test_juniper_encrypted_password_check_matches(capsys):
+    code = main(
+        [
+            "juniper-encrypted-password",
+            "--check",
+            "$5$itHMToxg$IAeDKDuWsSCoL2W7fognCW8cyNj4YE9ZhDvCoWFC5y/",
+            "lab123",
+        ]
+    )
+    assert code == 0
+    assert "YES" in capsys.readouterr().out
+
+
+def test_juniper_encrypted_password_check_mismatches():
+    code = main(
+        [
+            "juniper-encrypted-password",
+            "--check",
+            "$5$itHMToxg$IAeDKDuWsSCoL2W7fognCW8cyNj4YE9ZhDvCoWFC5y/",
+            "wrong",
+        ]
+    )
+    assert code == 1
+
+
+def test_juniper_encrypted_password_decrypt_reports_one_way(capsys):
+    assert main(["juniper-encrypted-password", "--decrypt", "$6$abc$def"]) == 2
+    assert "one-way" in capsys.readouterr().err
+
+
+def test_juniper_encrypted_password_encrypt_defaults_to_sha512(capsys):
+    assert main(["juniper-encrypted-password", "--encrypt", "hunter2"]) == 0
+    out = capsys.readouterr().out.strip()
+    assert out.startswith("$6$")
+
+
+def test_juniper_encrypted_password_variant_sha256_produces_dollar5_and_verifies(capsys):
+    assert main(
+        ["juniper-encrypted-password", "--variant", "sha256", "--encrypt", "hunter2"]
+    ) == 0
+    ct = capsys.readouterr().out.strip()
+    assert ct.startswith("$5$")
+    assert main(["juniper-encrypted-password", "--check", ct, "hunter2"]) == 0
+    assert "YES" in capsys.readouterr().out
+
+
+def test_juniper_encrypted_password_variant_sha512_produces_dollar6(capsys):
+    assert main(
+        ["juniper-encrypted-password", "--variant", "sha512", "--encrypt", "hunter2"]
+    ) == 0
+    out = capsys.readouterr().out.strip()
+    assert out.startswith("$6$")
+
+
+def test_variant_is_not_offered_for_a_format_with_no_variants():
+    """Pin the generic mechanism: cisco-type8 declares no variants, so
+    --variant must not be accepted for it."""
+    with pytest.raises(SystemExit) as exc:
+        main(["cisco-type8", "--variant", "sha256", "--encrypt", "hunter2"])
+    assert exc.value.code == 2
+
+
+def test_list_name_column_is_aligned(capsys):
+    """Regression guard: a long id (e.g. juniper-encrypted-password) must not
+    push its row's name column out of alignment with the other rows."""
+    assert main(["--list"]) == 0
+    lines = [line for line in capsys.readouterr().out.splitlines() if line]
+    offsets = {len(line) - len(line.split(None, 2)[2]) for line in lines}
+    assert len(offsets) == 1

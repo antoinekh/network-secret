@@ -39,6 +39,9 @@ class Cipher:
     # Environment variable the CLI falls back to when the key flag is absent.
     # None for keyless ciphers.
     env_var: str | None = None
+    # Format variants a caller may choose when encrypting, e.g. ("sha512", "sha256").
+    # The first entry is the default. Empty for formats with only one form.
+    variants: tuple[str, ...] = ()
 
     @property
     def keyed(self) -> bool:

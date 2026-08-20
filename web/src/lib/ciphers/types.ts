@@ -61,11 +61,16 @@ export interface CipherInfo {
   example?: CipherExample;
   /** External links: source repository, CLI tool, references. */
   links?: CipherLink[];
+  /**
+   * Format variants a user may choose when hashing, e.g. sha512 and sha256. The
+   * first entry is the default. Omitted for formats with only one form.
+   */
+  variants?: { value: string; label: string }[];
 }
 
 export interface Cipher extends CipherInfo {
   /** Encode cleartext into the format's encoded string. */
-  encode(plaintext: string, key?: string): Promise<string>;
+  encode(plaintext: string, key?: string, variant?: string): Promise<string>;
   /** Decode an encoded string back to cleartext. */
   decode(encoded: string, key?: string): Promise<string>;
   /**

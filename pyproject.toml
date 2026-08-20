@@ -1,6 +1,6 @@
 [project]
 name = "network-secret"
-version = "0.3.0"
+version = "0.4.0"
 description = "Encode, decode, and check network device secrets: Juniper/HPE $9$ and $8$, Nokia SR OS custom-hash and $2y$ bcrypt passwords, and Cisco IOS type 6, 7, 8 and 9"
 readme = "README.md"
 license = { file = "LICENSE" }
