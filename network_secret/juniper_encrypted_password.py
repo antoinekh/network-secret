@@ -81,10 +81,15 @@ def _strip_decoration(value: str) -> str:
 
     Repeatedly strips surrounding whitespace, a trailing SECRET_DATA_MARKER,
     a trailing ';', and one layer of matching surrounding quotes, in any
-    order and any combination, until none apply. This lets a caller pass the
-    whole config line:
+    order and any combination, until none apply. This lets a caller paste
+    the quoted value straight out of a config line, decoration and all:
 
-        encrypted-password "$5$salt$hash"; ## SECRET-DATA
+        "$5$salt$hash"; ## SECRET-DATA
+
+    It does NOT strip a leading "encrypted-password " keyword: nothing here
+    looks for or removes it, so the full config line including that keyword
+    fails to parse. Start from the opening quote (or from "$5$"/"$6$" itself
+    if there is no quoting).
     """
     text = value
     changed = True
